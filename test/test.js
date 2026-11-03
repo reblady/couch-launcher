@@ -19,6 +19,8 @@ const Osk = require('../osk');
 const cfgFile = require('../instancecfg');
 const modcheck = require('../modcheck');
 const zlib = require('zlib');
+const i18n = require('../i18n');
+const { collectKeys } = require('./i18n-keys');
 const zipReader = require('../zip');
 const { isSafePath, isAllowedUrl, parseIndex, installMrpack, updateMrpack } = require('../mrpack');
 const { packChoices } = require('../modrinth');
@@ -336,6 +338,7 @@ test('Sounds: alle Töne sind gültig, ohne Web Audio passiert beim Abspielen ni
 
 test('Einstellungen: Standardwerte, ungültige Werte werden ersetzt', () => {
   assert.deepStrictEqual(Settings.normalize({}), {
+    language: 'auto',
     aButton: 'details',
     sounds: true,
     volume: 0.5,
@@ -458,10 +461,46 @@ test('Eingabe: ungemappter Controller mit 15 Tasten', () => {
   assert.deepStrictEqual(createMapper().update([{ ...pad([4]), mapping: 'standard' }], 0), ['lb'], 'bekannte Controller bleiben gleich');
 });
 
+// ---------- i18n.js ----------
+
+test('Sprache: Auswahl, Systemsprache, Platzhalter, Rückfall auf Deutsch', () => {
+  assert.strictEqual(i18n.resolve('auto', 'de-AT'), 'de');
+  assert.strictEqual(i18n.resolve('auto', 'en-GB'), 'en');
+  assert.strictEqual(i18n.resolve('auto', 'fr-FR'), 'en', 'unbekannte Sprache wird Englisch');
+  assert.strictEqual(i18n.resolve('auto', ''), 'en');
+  assert.strictEqual(i18n.resolve('de', 'en-US'), 'de');
+  assert.strictEqual(i18n.resolve('quatsch', 'de'), 'de');
+  i18n.setLanguage('en');
+  assert.strictEqual(i18n.t('Spielen'), 'Play');
+  assert.strictEqual(i18n.t('Dateien: {done} von {total}', { done: 3, total: 9 }), 'Files: 3 of 9');
+  assert.strictEqual(i18n.t('Gibt es nicht'), 'Gibt es nicht', 'fehlt die Übersetzung, bleibt es Deutsch');
+  assert.strictEqual(i18n.locale(), 'en-US');
+  i18n.setLanguage('de');
+  assert.strictEqual(i18n.t('Spielen'), 'Spielen');
+  assert.strictEqual(i18n.t('{n} min', { n: 5 }), '5 min');
+});
+
+test('Sprache: jeder Text im Code hat eine Übersetzung mit denselben Platzhaltern', () => {
+  const placeholders = (text) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(',');
+  for (const [lang, dict] of Object.entries(i18n.LANGS)) {
+    const keys = collectKeys();
+    const missing = keys.filter((k) => !(k in dict));
+    assert.deepStrictEqual(missing, [], `${lang}: Übersetzung fehlt`);
+    for (const k of keys) assert.strictEqual(placeholders(dict[k]), placeholders(k), `${lang}: Platzhalter in „${k}“`);
+    const unused = Object.keys(dict).filter((k) => !keys.includes(k));
+    assert.deepStrictEqual(unused, [], `${lang}: Übersetzung wird nicht mehr gebraucht`);
+  }
+});
+
 // ---------- osk.js ----------
 
 test('Bildschirmtastatur: alle Reihen gleich breit, keine versetzten Tasten', () => {
-  for (const row of Osk.ROWS) assert.strictEqual(row.length, Osk.COLUMNS, row);
+  for (const rows of Object.values(Osk.LAYOUTS)) {
+    for (const row of rows) assert.strictEqual(row.length, Osk.COLUMNS, row);
+  }
+  assert.strictEqual(Osk.rowsFor('en')[1], 'qwertyuiop');
+  assert.strictEqual(Osk.rowsFor('de')[1], 'qwertzuiop');
+  assert.strictEqual(Osk.rowsFor('fr'), Osk.LAYOUTS.en);
   assert.strictEqual(Osk.SPECIAL.reduce((sum, s) => sum + s.span, 0), Osk.COLUMNS);
 });
 

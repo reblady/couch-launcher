@@ -1,5 +1,7 @@
 'use strict';
 
+const { t } = require('./i18n');
+
 // Einstellungen einer Instanz in Prisms instance.cfg lesen und ändern. Prism pflegt in der Datei viele
 // eigene Werte und Abschnitte, deshalb werden nur einzelne Zeilen in [General] angefasst.
 
@@ -74,7 +76,7 @@ function readSettings(text) {
 function memoryChanges(cfg, memory) {
   if (memory === 0) return { OverrideMemory: 'false' };
   if (!Number.isInteger(memory) || memory < MIN_MEMORY || memory > MAX_MEMORY) {
-    throw new Error('Ungültiger Arbeitsspeicher.');
+    throw new Error(t('Ungültiger Arbeitsspeicher.'));
   }
   const min = Number(cfg.MinMemAlloc) || MIN_MEMORY;
   return { OverrideMemory: 'true', MaxMemAlloc: memory, MinMemAlloc: Math.min(min, memory) };
@@ -88,7 +90,7 @@ function windowChanges(cfg, value) {
   };
   if (value === 'max') return { OverrideWindow: 'true', LaunchMaximized: 'true', ...size };
   const match = typeof value === 'string' && value.match(/^(\d{3,5})x(\d{3,5})$/);
-  if (!match) throw new Error('Ungültige Fenstergröße.');
+  if (!match) throw new Error(t('Ungültige Fenstergröße.'));
   return {
     OverrideWindow: 'true',
     LaunchMaximized: 'false',
@@ -103,7 +105,7 @@ function applySettings(text, patch) {
   const changes = {};
   if ('name' in patch) {
     const name = cleanName(patch.name);
-    if (!name) throw new Error('Der Name darf nicht leer sein.');
+    if (!name) throw new Error(t('Der Name darf nicht leer sein.'));
     changes.name = name;
   }
   if ('memory' in patch) Object.assign(changes, memoryChanges(cfg, patch.memory));

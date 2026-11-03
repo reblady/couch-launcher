@@ -1,5 +1,7 @@
 'use strict';
 
+const { t } = require('./i18n');
+
 // Kleiner ZIP-Leser für .mrpack-Dateien, damit keine Abhängigkeit nötig ist.
 // Kann gespeicherte und mit Deflate komprimierte Einträge, ZIP64 braucht ein Modpack nicht.
 
@@ -15,7 +17,7 @@ function findEnd(buf) {
   for (let i = buf.length - 22; i >= lowest; i--) {
     if (buf.readUInt32LE(i) === EOCD) return i;
   }
-  throw new Error('Keine gültige ZIP-Datei.');
+  throw new Error(t('Keine gültige ZIP-Datei.'));
 }
 
 function readEntries(buf) {
@@ -24,7 +26,7 @@ function readEntries(buf) {
   let pos = buf.readUInt32LE(end + 16);
   const entries = [];
   for (let i = 0; i < count; i++) {
-    if (pos + 46 > buf.length || buf.readUInt32LE(pos) !== CENTRAL) throw new Error('Beschädigte ZIP-Datei.');
+    if (pos + 46 > buf.length || buf.readUInt32LE(pos) !== CENTRAL) throw new Error(t('Beschädigte ZIP-Datei.'));
     const nameLength = buf.readUInt16LE(pos + 28);
     const extraLength = buf.readUInt16LE(pos + 30);
     const commentLength = buf.readUInt16LE(pos + 32);
@@ -41,14 +43,14 @@ function readEntries(buf) {
 }
 
 function extract(buf, entry) {
-  if (entry.size > MAX_ENTRY_SIZE) throw new Error('Datei im Archiv ist zu groß.');
+  if (entry.size > MAX_ENTRY_SIZE) throw new Error(t('Datei im Archiv ist zu groß.'));
   const pos = entry.offset;
-  if (pos + 30 > buf.length || buf.readUInt32LE(pos) !== LOCAL) throw new Error('Beschädigte ZIP-Datei.');
+  if (pos + 30 > buf.length || buf.readUInt32LE(pos) !== LOCAL) throw new Error(t('Beschädigte ZIP-Datei.'));
   const start = pos + 30 + buf.readUInt16LE(pos + 26) + buf.readUInt16LE(pos + 28);
   const data = buf.subarray(start, start + entry.compressedSize);
   if (entry.method === 0) return data;
   if (entry.method === 8) return zlib.inflateRawSync(data, { maxOutputLength: entry.size || 1 });
-  throw new Error(`Nicht unterstützte Kompression (${entry.method}).`);
+  throw new Error(t('Nicht unterstützte Kompression ({method}).', { method: entry.method }));
 }
 
 module.exports = { readEntries, extract };

@@ -4,7 +4,7 @@ Big-Picture-artiges Frontend für den Prism Launcher (Electron). Zeigt die Prism
 
 ## Zusammenarbeit
 
-- Mit dem Nutzer auf Deutsch, locker und knapp. UI-Texte ebenfalls auf Deutsch.
+- Mit dem Nutzer auf Deutsch, locker und knapp. UI-Texte werden auf Deutsch geschrieben und in `lang-en.js` übersetzt (siehe Übersetzung unten). `README.md` ist englisch, `README.de.md` deutsch, beide pflegen.
 - Der Nutzer spielt am Sofa mit Controller, deshalb zählt: große Ziele, deutlicher Fokus, nichts, das nur mit Maus geht.
 - Keine schweren neuen Abhängigkeiten ohne Rückfrage. Aktuell gibt es nur `electron` und, nur zum Bauen, `electron-builder` (vom Nutzer erlaubt).
 - Verteilt wird als AppImage für Linux über GitHub-Releases, so wollte es der Nutzer. Windows und macOS gibt es bewusst nicht.
@@ -42,7 +42,9 @@ Repo: https://github.com/reblady/couch-launcher (öffentlich, Commits als `rebla
 | `views.js` | Ansichts-Stapel und Belegung von A/X (läuft auch in Node-Tests) |
 | `modrinth.js` | Modrinth-API: Suche, Abhängigkeiten auflösen, Dateien per Hash erkennen (nur Hauptprozess) |
 | `modpacks.js` | Neue Prism-Instanz anlegen, Mods/Ressourcenpakete/Shader auflisten, schalten, entfernen, herunterladen (nur Hauptprozess) |
-| `osk.js` | Bildschirmtastatur: Layout und Tastenlogik (läuft auch in Node-Tests) |
+| `osk.js` | Bildschirmtastatur: Layout pro Sprache (QWERTZ, QWERTY) und Tastenlogik (läuft auch in Node-Tests) |
+| `i18n.js`, `lang-en.js` | Übersetzung: `t('deutscher Text', { platzhalter })`, englisches Wörterbuch (Renderer und Hauptprozess) |
+| `test/i18n-keys.js` | Sammelt alle zu übersetzenden Texte, `npm test` prüft damit die Vollständigkeit |
 | `modpacks-ui.js` | Ansichten Tastatur, Rückfrage, Neues Modpack, Einstellungen pro Modpack, Inhalte verwalten und suchen. Hängt sich über `window.CouchUI` in `renderer.js` ein |
 | `index.html`, `style.css` | Layout und Optik |
 | `config.json` | Liegt unter `~/.config/couch-launcher/`, weil die AppImage schreibgeschützt ist. Eine alte `config.json` im Projektordner wird beim Start einmalig dorthin kopiert (Vorlage: `config.example.json`) |
@@ -79,6 +81,7 @@ Repo: https://github.com/reblady/couch-launcher (öffentlich, Commits als `rebla
 - Spiel-Vollbild (F11-Modus) steht nicht bei Prism, sondern als `fullscreen:` in der `options.txt`. Der Hauptprozess setzt es direkt vor jedem Start (`gameFullscreen`, Standard an). Hat ein Pack eine eigene Fenstergröße (Maximiert, feste Auflösung), geht die vor und `fullscreen:false` wird gesetzt. Bei Aus bleibt die Datei in Ruhe. F11 im Spiel gilt deshalb nur bis zum nächsten Start.
 - `instancecfg.js` ändert nur einzelne Zeilen in `[General]`, die Datei wird nie neu aufgebaut, weil Prism dort eigene Abschnitte und Maskierungen pflegt. Prism schaltet in Gruppen: `OverrideMemory` (`MaxMemAlloc`, `MinMemAlloc`), `OverrideWindow` (`LaunchMaximized`, `MinecraftWinWidth`, `MinecraftWinHeight`). „Wie in Prism“ heißt, der Override ist aus. Der Ordnername bleibt beim Umbenennen gleich, er ist die ID. Weitere Gruppen wären `OverrideJavaArgs` (`JvmArgs`), `OverridePerformance` (GameMode, MangoHud, Zink), `OverrideConsole`.
 - Bildschirmtastatur ist ein Raster mit 10 Spalten (`COLUMNS` in `osk.js`), jede Reihe muss genau so breit sein.
+- Übersetzung: Jeder sichtbare Text läuft durch `t()`, der deutsche Text ist der Schlüssel, Platzhalter in `{}`. Fehlt eine Übersetzung, erscheint Deutsch. `npm test` scheitert, wenn in `lang-en.js` ein Text oder Platzhalter fehlt oder übrig ist. Feste Texte in `index.html` tragen `data-i18n`. Beschriftungen, die beim Laden entstehen (`DEFS`, `TYPES`, `SPECIAL`), bleiben deutsch und laufen erst beim Anzeigen durch `t()`, weil die Sprache sich zur Laufzeit ändern kann. Gleicher deutscher Text heißt gleiche Übersetzung, für verschiedene Bedeutungen verschiedene deutsche Texte wählen (Beispiel „Zuletzt gespielt“ gegen „Letzter Start“). Einstellung `language`: `auto` folgt der Systemsprache (Deutsch, sonst Englisch). Der Hauptprozess stellt die Sprache in `loadConfig()` ein, damit Fehlermeldungen passen.
 - Startfokus liegt auf der ersten Instanz-Kachel (zuletzt gespielt), nie auf dem Einstellungs-Button.
 
 ## Stand

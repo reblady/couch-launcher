@@ -1,5 +1,7 @@
 'use strict';
 
+const { t } = require('./i18n');
+
 // Neue Instanzen anlegen und Inhalte (Mods, Ressourcenpakete, Shader) einer Instanz verwalten.
 
 const crypto = require('crypto');
@@ -94,7 +96,7 @@ function instanceCfgText(name, extra = {}) {
 function createInstance(instancesDir, { name, mc, loader, version }) {
   const title = cleanName(name) || 'Modpack';
   const id = uniqueId(title, instancesDir);
-  if (!isValidId(id)) throw new Error('Ungültiger Name.');
+  if (!isValidId(id)) throw new Error(t('Ungültiger Name.'));
   const dir = path.join(instancesDir, id);
   fs.mkdirSync(dir);
   fs.mkdirSync(path.join(dir, 'minecraft', 'mods'), { recursive: true });
@@ -165,7 +167,7 @@ async function hashContent(instDir, type, items) {
 }
 
 function setEnabled(instDir, type, file, enabled) {
-  if (!safeFileName(file, type)) throw new Error('Ungültiger Dateiname.');
+  if (!safeFileName(file, type)) throw new Error(t('Ungültiger Dateiname.'));
   const dir = contentDir(instDir, type);
   const isOff = file.toLowerCase().endsWith(DISABLED);
   const target = enabled ? (isOff ? file.slice(0, -DISABLED.length) : file) : isOff ? file : file + DISABLED;
@@ -192,7 +194,7 @@ function removeIndexEntry(dir, file) {
 }
 
 function removeContent(instDir, type, file) {
-  if (!safeFileName(file, type)) throw new Error('Ungültiger Dateiname.');
+  if (!safeFileName(file, type)) throw new Error(t('Ungültiger Dateiname.'));
   const dir = contentDir(instDir, type);
   fs.rmSync(path.join(dir, file));
   removeIndexEntry(dir, file);
@@ -203,7 +205,7 @@ function setLoaderVersion(instDir, loader, version) {
   const file = path.join(instDir, 'mmc-pack.json');
   const pack = JSON.parse(fs.readFileSync(file, 'utf8'));
   const component = pack.components.find((c) => c.uid === LOADERS[loader].uid);
-  if (!component) throw new Error('Loader nicht gefunden.');
+  if (!component) throw new Error(t('Loader nicht gefunden.'));
   component.version = version;
   component.cachedVersion = version;
   const tmp = `${file}.couch.tmp`;
@@ -214,14 +216,14 @@ function setLoaderVersion(instDir, loader, version) {
 // Lädt eine Datei vom Modrinth-CDN und prüft den Hash. Geschrieben wird noch nichts.
 async function fetchVerified(fetchFn, type, file) {
   const url = new URL(file.url);
-  if (url.protocol !== 'https:' || url.hostname !== 'cdn.modrinth.com') throw new Error('Unerwartete Download-Adresse.');
-  if (!safeFileName(file.filename, type)) throw new Error('Unerwarteter Dateiname.');
+  if (url.protocol !== 'https:' || url.hostname !== 'cdn.modrinth.com') throw new Error(t('Unerwartete Download-Adresse.'));
+  if (!safeFileName(file.filename, type)) throw new Error(t('Unerwarteter Dateiname.'));
 
   const res = await fetchFn(file.url, { headers: { 'User-Agent': 'couch-launcher/0.1.0' } });
-  if (!res.ok) throw new Error(`Download fehlgeschlagen (${res.status})`);
+  if (!res.ok) throw new Error(t('Download fehlgeschlagen ({status})', { status: res.status }));
   const data = Buffer.from(await res.arrayBuffer());
   const hash = crypto.createHash('sha512').update(data).digest('hex');
-  if (hash !== file.hashes.sha512) throw new Error(`Prüfsumme stimmt nicht: ${file.filename}`);
+  if (hash !== file.hashes.sha512) throw new Error(t('Prüfsumme stimmt nicht: {file}', { file: file.filename }));
   return data;
 }
 

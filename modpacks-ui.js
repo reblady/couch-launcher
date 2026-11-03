@@ -5,9 +5,11 @@
 
   const ui = window.CouchUI;
   const { Osk, couch } = window;
+  const { t } = window.I18n;
   const $ = (sel) => document.querySelector(sel);
 
   const TYPES = [
+    // Übersetzt wird erst beim Anzeigen, die Sprache kann sich ändern
     { type: 'mod', label: 'Mods' },
     { type: 'resourcepack', label: 'Ressourcenpakete' },
     { type: 'shader', label: 'Shader' },
@@ -80,6 +82,7 @@
   }
 
   function buildOsk() {
+    oskKeys.replaceChildren();
     const add = (row, key, label) => {
       const b = button('tile key');
       b.dataset.k = key;
@@ -88,14 +91,14 @@
       row.appendChild(b);
     };
     oskKeys.style.gridTemplateColumns = `repeat(${Osk.COLUMNS}, 1fr)`;
-    for (const keys of Osk.ROWS) {
+    for (const keys of Osk.rowsFor(window.I18n.language())) {
       const row = el('div', 'osk-row');
       for (const k of keys) add(row, k, k);
       oskKeys.appendChild(row);
     }
     const row = el('div', 'osk-row special');
     for (const s of Osk.SPECIAL) {
-      add(row, s.key, s.label);
+      add(row, s.key, t(s.label));
       row.lastChild.style.gridColumn = `span ${s.span}`;
     }
     oskKeys.appendChild(row);
@@ -117,7 +120,7 @@
   }
 
   ui.registerView('keyboard', oskEl, '#osk-keys .key', {
-    hints: () => ({ a: 'Taste', x: 'Löschen', y: 'Leerzeichen', lb: 'Groß', b: 'Abbrechen' }),
+    hints: () => ({ a: t('Taste'), x: t('Löschen'), y: t('Leerzeichen'), lb: t('Groß'), b: t('Abbrechen') }),
     onClose() {
       const resolve = oskResolve;
       oskResolve = null;
@@ -180,7 +183,7 @@
 
   async function askConfirm({ title, text, yes }) {
     const choices = [
-      { label: 'Abbrechen', value: null },
+      { label: t('Abbrechen'), value: null },
       { label: yes, value: true },
     ];
     return (await askChoice({ title, text, choices })) === true;
@@ -197,15 +200,15 @@
   // ---------- Controlify vor dem Start ----------
 
   async function addControlify(id) {
-    notice('Controlify wird hinzugefügt …', true);
+    notice(t('Controlify wird hinzugefügt …'), true);
     const res = await couch.addControlify(id);
     noticeEl.hidden = true;
     if (!res.ok) {
-      ui.toast(`Controlify nicht hinzugefügt: ${res.error}`);
+      ui.toast(t('Controlify nicht hinzugefügt: {error}', { error: res.error }));
       return false;
     }
     if (res.missing && res.missing.length) {
-      ui.toast(`Keine passende Version für: ${res.missing.join(', ')}`);
+      ui.toast(t('Keine passende Version für: {list}', { list: res.missing.join(', ') }));
       return false;
     }
     return true;
@@ -218,17 +221,17 @@
 
     const off = res.state === 'disabled';
     let text = off
-      ? 'Controlify ist in diesem Modpack ausgeschaltet. Ohne die Mod kannst du Minecraft nicht mit dem Controller spielen.'
-      : 'Ohne die Mod Controlify kannst du Minecraft nicht mit dem Controller spielen.';
-    if (!res.installable) text += ' Für dieses Modpack lässt sie sich gerade nicht hinzufügen.';
+      ? t('Controlify ist in diesem Modpack ausgeschaltet. Ohne die Mod kannst du Minecraft nicht mit dem Controller spielen.')
+      : t('Ohne die Mod Controlify kannst du Minecraft nicht mit dem Controller spielen.');
+    if (!res.installable) text += ` ${t('Für dieses Modpack lässt sie sich gerade nicht hinzufügen.')}`;
 
     const choices = [];
     if (res.installable) {
-      choices.push({ label: off ? 'Einschalten und starten' : 'Hinzufügen und starten', value: 'add', primary: true });
+      choices.push({ label: off ? t('Einschalten und starten') : t('Hinzufügen und starten'), value: 'add', primary: true });
     }
-    choices.push({ label: 'Ohne Controlify starten', value: 'skip' }, { label: 'Abbrechen', value: null });
+    choices.push({ label: t('Ohne Controlify starten'), value: 'skip' }, { label: t('Abbrechen'), value: null });
 
-    const choice = await askChoice({ title: 'Wirklich ohne Controlify starten?', text, choices });
+    const choice = await askChoice({ title: t('Wirklich ohne Controlify starten?'), text, choices });
     if (choice === 'add') return addControlify(instance.id);
     return choice === 'skip';
   };
@@ -242,8 +245,8 @@
 
   function draftFields() {
     return [
-      { key: 'mc', label: 'Minecraft-Version', values: draft.options.minecraft.map((v) => ({ value: v, label: v })) },
-      { key: 'loader', label: 'Mod-Loader', values: draft.options.loaders },
+      { key: 'mc', label: t('Minecraft-Version'), values: draft.options.minecraft.map((v) => ({ value: v, label: v })) },
+      { key: 'loader', label: t('Mod-Loader'), values: draft.options.loaders },
     ];
   }
 
@@ -261,7 +264,7 @@
 
     const name = button('tile setting');
     name.dataset.field = 'name';
-    fillRow(name, 'Name', draft.name, false);
+    fillRow(name, t('Name'), draft.name, false);
     name.addEventListener('click', editName);
     newpackRows.appendChild(name);
 
@@ -275,7 +278,7 @@
 
     const create = button('tile btn play');
     create.dataset.field = 'create';
-    create.textContent = 'Erstellen';
+    create.textContent = t('Erstellen');
     create.addEventListener('click', createPack);
     newpackRows.appendChild(create);
 
@@ -284,7 +287,7 @@
   }
 
   async function editName() {
-    const text = await askText({ title: 'Name des Modpacks', value: draft.name, max: 40 });
+    const text = await askText({ title: t('Name des Modpacks'), value: draft.name, max: 40 });
     if (text !== null && text.trim()) draft.name = text.trim();
     drawDraft();
     const row = newpackRows.querySelector('[data-field="name"]');
@@ -307,7 +310,7 @@
   async function createPack() {
     if (creating) return;
     creating = true;
-    notice('Modpack wird angelegt …', true);
+    notice(t('Modpack wird angelegt …'), true);
     const res = await couch.createPack({ name: draft.name, mc: draft.mc, loader: draft.loader });
     creating = false;
     noticeEl.hidden = true;
@@ -326,7 +329,7 @@
   }
 
   ui.registerView('newpack', newpackEl, '#newpack-rows .tile', {
-    hints: () => ({ a: 'Auswählen' }),
+    hints: () => ({ a: t('Auswählen') }),
     onMove(dir, active) {
       const field = active && active.dataset.field;
       if ((dir !== 'left' && dir !== 'right') || (field !== 'mc' && field !== 'loader')) return false;
@@ -337,15 +340,15 @@
 
   ui.newPack = async () => {
     if (creating) return;
-    notice('Versionen werden geladen …', true);
+    notice(t('Versionen werden geladen …'), true);
     const res = await couch.packOptions();
     noticeEl.hidden = true;
     if (!res.ok) {
-      ui.toast(`Versionen nicht geladen: ${res.error}`);
+      ui.toast(t('Versionen nicht geladen: {error}', { error: res.error }));
       return;
     }
     if (ui.top() !== 'home') return;
-    draft = { name: 'Mein Modpack', mc: res.minecraft[0], loader: res.loaders[0].value, options: res };
+    draft = { name: t('Mein Modpack'), mc: res.minecraft[0], loader: res.loaders[0].value, options: res };
     newpackRows.replaceChildren();
     drawDraft();
     ui.sound.play('open');
@@ -361,24 +364,24 @@
   let packState = null;
 
   function fmtMemory(mb) {
-    return `${(mb / 1024).toLocaleString('de-DE', { maximumFractionDigits: 1 })} GB`;
+    return `${(mb / 1024).toLocaleString(window.I18n.locale(), { maximumFractionDigits: 1 })} GB`;
   }
 
   function memoryLabel(mb) {
     if (mb) return fmtMemory(mb);
-    return packState.globalMemory ? `Wie in Prism (${fmtMemory(packState.globalMemory)})` : 'Wie in Prism';
+    return packState.globalMemory ? t('Wie in Prism ({memory})', { memory: fmtMemory(packState.globalMemory) }) : t('Wie in Prism');
   }
 
   function windowLabel(value) {
-    if (value === 'default') return ui.settings().gameFullscreen ? 'Vollbild' : 'Wie in Prism';
-    return value === 'max' ? 'Maximiert' : value.replace('x', ' × ');
+    if (value === 'default') return ui.settings().gameFullscreen ? t('Vollbild') : t('Wie in Prism');
+    return value === 'max' ? t('Maximiert') : value.replace('x', ' × ');
   }
 
   function packFields() {
     const current = packState.settings.window;
     return [
-      { key: 'memory', label: 'Arbeitsspeicher', values: packState.memoryOptions, text: memoryLabel },
-      { key: 'window', label: 'Fenstergröße', values: WINDOWS.includes(current) ? WINDOWS : [...WINDOWS, current], text: windowLabel },
+      { key: 'memory', label: t('Arbeitsspeicher'), values: packState.memoryOptions, text: memoryLabel },
+      { key: 'window', label: t('Fenstergröße'), values: WINDOWS.includes(current) ? WINDOWS : [...WINDOWS, current], text: windowLabel },
     ];
   }
 
@@ -387,7 +390,7 @@
 
     const name = button('tile setting');
     name.dataset.field = 'name';
-    fillRow(name, 'Name', packState.settings.name, false);
+    fillRow(name, t('Name'), packState.settings.name, false);
     name.addEventListener('click', editPackName);
     packRows.appendChild(name);
 
@@ -402,14 +405,14 @@
     if (packInst.managedId) {
       const version = button('tile setting');
       version.dataset.field = 'packversion';
-      fillRow(version, 'Modpack-Version', packInst.managedVersionName || 'Unbekannt', false);
+      fillRow(version, t('Modpack-Version'), packInst.managedVersionName || t('Unbekannt'), false);
       version.addEventListener('click', openPackSwitch);
       packRows.appendChild(version);
     }
 
     const remove = button('tile btn danger');
     remove.dataset.field = 'delete';
-    remove.textContent = 'Modpack löschen';
+    remove.textContent = t('Modpack löschen');
     remove.addEventListener('click', deletePack);
     packRows.appendChild(remove);
 
@@ -420,7 +423,7 @@
   async function savePack(patch) {
     const res = await couch.savePackSettings(packInst.id, patch);
     if (!res.ok) {
-      ui.toast(`Nicht gespeichert: ${res.error}`);
+      ui.toast(t('Nicht gespeichert: {error}', { error: res.error }));
       return false;
     }
     return true;
@@ -442,7 +445,7 @@
   }
 
   async function editPackName() {
-    const text = await askText({ title: 'Name des Modpacks', value: packState.settings.name, max: 40 });
+    const text = await askText({ title: t('Name des Modpacks'), value: packState.settings.name, max: 40 });
     if (text !== null && text.trim() && text.trim() !== packState.settings.name && (await savePack({ name: text.trim() }))) {
       packState.settings.name = text.trim();
       $('#packsettings-title').textContent = text.trim();
@@ -453,25 +456,25 @@
 
   async function deletePack() {
     const yes = await askConfirm({
-      title: `„${packState.settings.name}“ löschen?`,
-      text: 'Das Modpack wandert samt Welten in den Papierkorb und lässt sich von dort zurückholen.',
-      yes: 'Löschen',
+      title: t('„{name}“ löschen?', { name: packState.settings.name }),
+      text: t('Das Modpack wandert samt Welten in den Papierkorb und lässt sich von dort zurückholen.'),
+      yes: t('Löschen'),
     });
     if (!yes) return;
     const res = await couch.deletePack(packInst.id);
     if (!res.ok) {
-      ui.toast(`Löschen fehlgeschlagen: ${res.error}`);
+      ui.toast(t('Löschen fehlgeschlagen: {error}', { error: res.error }));
       return;
     }
     // Einstellungen und Detailseite gehören zur gelöschten Instanz
     ui.closeTop(true);
     ui.closeTop(true);
     await ui.refresh();
-    notice(`${packState.settings.name} liegt im Papierkorb`);
+    notice(t('{name} liegt im Papierkorb', { name: packState.settings.name }));
   }
 
   ui.registerView('packsettings', packEl, '#packsettings-rows .tile', {
-    hints: () => ({ a: 'Ändern' }),
+    hints: () => ({ a: t('Ändern') }),
     onMove(dir, active) {
       const field = active && active.dataset.field;
       if ((dir !== 'left' && dir !== 'right') || (field !== 'memory' && field !== 'window')) return false;
@@ -502,19 +505,19 @@
   let type = 'mod';
 
   function typesFor(instance) {
-    return TYPES.filter((t) => t.type !== 'mod' || instance.loader);
+    return TYPES.filter((entry) => entry.type !== 'mod' || instance.loader);
   }
 
   function drawTabs(selector) {
     const box = $(selector);
     box.replaceChildren(
-      ...typesFor(inst).map((t) => el('span', t.type === type ? 'tab active' : 'tab', t.label))
+      ...typesFor(inst).map((entry) => el('span', entry.type === type ? 'tab active' : 'tab', t(entry.label)))
     );
   }
 
   function nextType(dir) {
     const list = typesFor(inst);
-    const i = list.findIndex((t) => t.type === type);
+    const i = list.findIndex((entry) => entry.type === type);
     const next = list[i + dir];
     if (!next) {
       ui.sound.play('bump');
@@ -527,7 +530,7 @@
 
   function firstType(instance, wanted) {
     const list = typesFor(instance);
-    return (list.find((t) => t.type === wanted) || list[0]).type;
+    return (list.find((entry) => entry.type === wanted) || list[0]).type;
   }
 
   // ---------- Installierte Inhalte ----------
@@ -546,8 +549,8 @@
     const left = el('span', 'item');
     left.append(icon(item.icon), el('span', '', item.title || item.name));
     const update = updates && updates.get(item.file);
-    const state = item.enabled ? 'An' : 'Aus';
-    row.append(left, el('span', item.enabled ? 'value' : 'value off', update ? `Update: ${update} · ${state}` : state));
+    const state = item.enabled ? t('An') : t('Aus');
+    row.append(left, el('span', item.enabled ? 'value' : 'value off', update ? t('Update: {version} · {state}', { version: update, state }) : state));
     row.addEventListener('click', () => toggleItem(item));
     return row;
   }
@@ -556,7 +559,7 @@
     const rows = items.map(makeItemRow);
     const add = button('tile setting');
     add.dataset.file = '';
-    add.append(el('span', '', '+ Hinzufügen'));
+    add.append(el('span', '', t('+ Hinzufügen')));
     add.addEventListener('click', () => openBrowse(inst, type));
 
     const update = button('tile setting');
@@ -564,11 +567,17 @@
     update.dataset.action = 'update';
     const open = updates ? updates.size : 0;
     const single = open > 0 && Boolean(inst.managedId);
-    update.append(el('span', '', single ? `${open} ${open === 1 ? 'Update' : 'Updates'} verfügbar` : open ? `Alle aktualisieren (${open})` : 'Nach Updates suchen'));
-    if (updates && !open) update.append(el('span', 'value off', 'Alles aktuell'));
-    if (single) update.append(el('span', 'value off', 'Einzeln mit Y'));
+    update.append(el('span', '', single
+          ? open === 1
+            ? t('1 Update verfügbar')
+            : t('{n} Updates verfügbar', { n: open })
+          : open
+            ? t('Alle aktualisieren ({n})', { n: open })
+            : t('Nach Updates suchen')));
+    if (updates && !open) update.append(el('span', 'value off', t('Alles aktuell')));
+    if (single) update.append(el('span', 'value off', t('Einzeln mit Y')));
     update.addEventListener('click', () => {
-      if (single) notice('Bei Modpacks mit Y einzeln aktualisieren. Das ganze Pack hebst du in den Einstellungen an.');
+      if (single) notice(t('Bei Modpacks mit Y einzeln aktualisieren. Das ganze Pack hebst du in den Einstellungen an.'));
       else if (open) applyUpdates();
       else checkUpdates();
     });
@@ -583,12 +592,12 @@
     if (updating) return;
     updating = true;
     ui.sound.play('confirm');
-    notice('Suche nach Updates …', true);
+    notice(t('Suche nach Updates …'), true);
     const res = await couch.findContentUpdates({ id: inst.id, type });
     updating = false;
     noticeEl.hidden = true;
     if (!res.ok) {
-      ui.toast(`Updates nicht geprüft: ${res.error}`);
+      ui.toast(t('Updates nicht geprüft: {error}', { error: res.error }));
       return;
     }
     updates = new Map(res.updates.map((u) => [u.file, u.to]));
@@ -597,8 +606,8 @@
 
   function afterUpdate(res) {
     const problems = [];
-    if (res.skipped.length) problems.push(`Übersprungen: ${res.skipped.join(', ')}`);
-    if (res.missing.length) problems.push(`Keine passende Version für: ${res.missing.join(', ')}`);
+    if (res.skipped.length) problems.push(t('Übersprungen: {list}', { list: res.skipped.join(', ') }));
+    if (res.missing.length) problems.push(t('Keine passende Version für: {list}', { list: res.missing.join(', ') }));
     if (problems.length) ui.toast(problems.join(' · '));
   }
 
@@ -607,20 +616,20 @@
     const name = item.title || item.name;
     if (inst.managedId) {
       const yes = await askConfirm({
-        title: `„${name}“ aktualisieren?`,
-        text: 'In Modpacks sind die Mods aufeinander abgestimmt, ein einzelnes Update kann Probleme machen. Die alte Datei wird ersetzt.',
-        yes: 'Aktualisieren',
+        title: t('„{name}“ aktualisieren?', { name }),
+        text: t('In Modpacks sind die Mods aufeinander abgestimmt, ein einzelnes Update kann Probleme machen. Die alte Datei wird ersetzt.'),
+        yes: t('Aktualisieren'),
       });
       if (!yes) return;
     }
     updating = true;
     ui.sound.play('confirm');
-    notice(`${name} wird aktualisiert …`, true);
+    notice(t('{name} wird aktualisiert …', { name }), true);
     const res = await couch.updateContent({ id: inst.id, type, file: item.file });
     updating = false;
     noticeEl.hidden = true;
     if (!res.ok) {
-      ui.toast(`Update abgebrochen: ${res.error}`);
+      ui.toast(t('Update abgebrochen: {error}', { error: res.error }));
       return;
     }
     afterUpdate(res);
@@ -635,21 +644,21 @@
 
   async function applyUpdates() {
     if (updating) return;
-    const label = TYPES.find((t) => t.type === type).label;
+    const label = t(TYPES.find((entry) => entry.type === type).label);
     const yes = await askConfirm({
-      title: `${updates.size} ${updates.size === 1 ? 'Eintrag' : label} aktualisieren?`,
-      text: 'Die alten Dateien werden ersetzt.',
-      yes: 'Aktualisieren',
+      title: updates.size === 1 ? t('1 Eintrag aktualisieren?') : t('{n} {kind} aktualisieren?', { n: updates.size, kind: label }),
+      text: t('Die alten Dateien werden ersetzt.'),
+      yes: t('Aktualisieren'),
     });
     if (!yes) return;
     updating = true;
     ui.sound.play('confirm');
-    notice('Updates werden vorbereitet …', true);
+    notice(t('Updates werden vorbereitet …'), true);
     const res = await couch.updateContent({ id: inst.id, type });
     updating = false;
     noticeEl.hidden = true;
     if (!res.ok) {
-      ui.toast(`Update abgebrochen: ${res.error}`);
+      ui.toast(t('Update abgebrochen: {error}', { error: res.error }));
       loadItems();
       return;
     }
@@ -688,7 +697,7 @@
   }
 
   async function removeItem(item) {
-    const yes = await askConfirm({ title: `„${item.title || item.name}“ entfernen?`, yes: 'Entfernen' });
+    const yes = await askConfirm({ title: t('„{name}“ entfernen?', { name: item.title || item.name }), yes: t('Entfernen') });
     if (!yes) return;
     const res = await couch.removeContent({ id: inst.id, type, file: item.file });
     if (!res.ok) {
@@ -707,8 +716,8 @@
   ui.registerView('list', listEl, '#content-list-items .tile', {
     hints() {
       const file = document.activeElement && document.activeElement.dataset.file;
-      const y = updates && updates.has(file) ? 'Aktualisieren' : 'Hinzufügen';
-      return { a: 'An / Aus', x: 'Entfernen', y, lb: 'Kategorie' };
+      const y = updates && updates.has(file) ? t('Aktualisieren') : t('Hinzufügen');
+      return { a: t('An / Aus'), x: t('Entfernen'), y, lb: t('Kategorie') };
     },
     onButton(name) {
       if (name === 'x') {
@@ -750,8 +759,8 @@
   let installingId = null;
 
   function drawSearchButton() {
-    const box = el('span', query ? 'value' : 'value off', query || 'Alles, nach Beliebtheit');
-    searchBtn.replaceChildren(el('span', '', 'Suchen'), box);
+    const box = el('span', query ? 'value' : 'value off', query || t('Alles, nach Beliebtheit'));
+    searchBtn.replaceChildren(el('span', '', t('Suchen')), box);
   }
 
   function cardFor(hit) {
@@ -759,7 +768,10 @@
     card.dataset.project = hit.id;
     const head = el('span', 'mod-head');
     const text = el('span', 'mod-title');
-    text.append(el('span', 'name', hit.title), el('span', 'meta', `${hit.author} · ${hit.downloads.toLocaleString('de-DE', { notation: 'compact' })} Downloads`));
+    text.append(el('span', 'name', hit.title), el('span', 'meta', t('{author} · {n} Downloads', {
+          author: hit.author,
+          n: hit.downloads.toLocaleString(window.I18n.locale(), { notation: 'compact' }),
+        })));
     head.append(icon(hit.icon), text);
     card.append(head, el('span', 'mod-desc', hit.description));
     return card;
@@ -776,7 +788,7 @@
   function markCard(card) {
     const id = card.dataset.project;
     const badge = card.querySelector('.badge');
-    badge.textContent = id === installingId ? 'Wird installiert …' : installed.has(id) ? 'Installiert' : '';
+    badge.textContent = id === installingId ? t('Wird installiert …') : installed.has(id) ? t('Installiert') : '';
     badge.hidden = !badge.textContent;
   }
 
@@ -786,7 +798,7 @@
 
   function moreButton() {
     const more = button('tile btn more');
-    more.textContent = 'Mehr laden';
+    more.textContent = t('Mehr laden');
     more.addEventListener('click', () => search(offset + 24));
     return more;
   }
@@ -795,18 +807,18 @@
     const token = ++searchToken;
     if (from === 0) {
       results.replaceChildren();
-      statusEl.textContent = 'Suche läuft …';
+      statusEl.textContent = t('Suche läuft …');
     }
     const res = await couch.searchContent({ id: inst.id, type, query, offset: from });
     if (token !== searchToken) return;
     if (!res.ok) {
       statusEl.textContent = '';
-      ui.toast(`Suche fehlgeschlagen: ${res.error}`);
+      ui.toast(t('Suche fehlgeschlagen: {error}', { error: res.error }));
       return;
     }
     offset = from;
     total = res.total;
-    statusEl.textContent = total ? '' : 'Nichts gefunden.';
+    statusEl.textContent = total ? '' : t('Nichts gefunden.');
     const old = results.querySelector('.more');
     if (old) old.remove();
     const cards = res.hits.map(makeCard);
@@ -831,13 +843,13 @@
     }
     if (installed.has(hit.id)) {
       ui.sound.play('bump');
-      notice(`${hit.title} ist schon installiert.`);
+      notice(t('{title} ist schon installiert.', { title: hit.title }));
       return;
     }
     installingId = hit.id;
     markCard(card);
     ui.sound.play('confirm');
-    notice(`${hit.title} wird vorbereitet …`, true);
+    notice(t('{title} wird vorbereitet …', { title: hit.title }), true);
     const res = await couch.installContent({ id: inst.id, type, projectId: hit.id });
     installingId = null;
     noticeEl.hidden = true;
@@ -849,12 +861,12 @@
     res.ids.forEach((id) => installed.add(id));
     markCards();
     const extra = res.installed.length - 1;
-    notice(extra > 0 ? `${hit.title} und ${extra} Abhängigkeiten installiert` : `${hit.title} installiert`);
-    if (res.missing.length) ui.toast(`Keine passende Version für: ${res.missing.join(', ')}`);
+    notice(extra > 0 ? t('{title} und {count} Abhängigkeiten installiert', { title: hit.title, count: extra }) : `${hit.title} installiert`);
+    if (res.missing.length) ui.toast(t('Keine passende Version für: {list}', { list: res.missing.join(', ') }));
   }
 
   async function editQuery() {
-    const text = await askText({ title: 'Suchen', value: query, max: 60 });
+    const text = await askText({ title: t('Suchen'), value: query, max: 60 });
     if (ui.top() === 'browse') ui.focusEl(searchBtn, false);
     if (text === null) return;
     query = text.trim();
@@ -871,10 +883,10 @@
   }
 
   searchBtn.addEventListener('click', editQuery);
-  couch.onContentProgress((p) => notice(`Lade ${p.title} (${p.done + 1}/${p.total}) …`, true));
+  couch.onContentProgress((p) => notice(t('Lade {title} ({done}/{total}) …', { title: p.title, done: p.done + 1, total: p.total }), true));
 
   ui.registerView('browse', browseEl, '#content-search, #content-browse-results .tile', {
-    hints: () => ({ a: 'Installieren', y: 'Suchen', lb: 'Kategorie' }),
+    hints: () => ({ a: t('Installieren'), y: t('Suchen'), lb: t('Kategorie') }),
     // Die Liste dahinter kann durch Installieren oder Kategoriewechsel veraltet sein
     onClose() {
       if (!listEl.hidden) loadItems();
@@ -894,7 +906,7 @@
     inst = instance;
     type = firstType(instance, wanted);
     query = '';
-    $('#content-browse-title').textContent = `${instance.name}: hinzufügen`;
+    $('#content-browse-title').textContent = t('{name}: hinzufügen', { name: instance.name });
     browseEl.scrollTop = 0;
     ui.sound.play('confirm');
     ui.openView('browse', null, searchBtn);
@@ -919,8 +931,8 @@
 
   function drawPackSearch() {
     packSearchBtn.replaceChildren(
-      el('span', '', 'Suchen'),
-      el('span', packQuery ? 'value' : 'value off', packQuery || 'Alles, nach Beliebtheit')
+      el('span', '', t('Suchen')),
+      el('span', packQuery ? 'value' : 'value off', packQuery || t('Alles, nach Beliebtheit'))
     );
   }
 
@@ -928,17 +940,17 @@
     const token = ++packToken;
     if (from === 0) {
       packResults.replaceChildren();
-      packStatus.textContent = 'Suche läuft …';
+      packStatus.textContent = t('Suche läuft …');
     }
     const res = await couch.searchPacks({ query: packQuery, offset: from });
     if (token !== packToken) return;
     if (!res.ok) {
       packStatus.textContent = '';
-      ui.toast(`Suche fehlgeschlagen: ${res.error}`);
+      ui.toast(t('Suche fehlgeschlagen: {error}', { error: res.error }));
       return;
     }
     packOffset = from;
-    packStatus.textContent = res.total ? '' : 'Nichts gefunden.';
+    packStatus.textContent = res.total ? '' : t('Nichts gefunden.');
     const old = packResults.querySelector('.more');
     if (old) old.remove();
     const cards = res.hits.map((hit) => {
@@ -949,7 +961,7 @@
     packResults.append(...cards);
     if (packOffset + res.hits.length < res.total) {
       const more = button('tile btn more');
-      more.textContent = 'Mehr laden';
+      more.textContent = t('Mehr laden');
       more.addEventListener('click', () => searchPacks(packOffset + 24));
       packResults.appendChild(more);
     }
@@ -957,7 +969,7 @@
   }
 
   async function editPackQuery() {
-    const text = await askText({ title: 'Modpack suchen', value: packQuery, max: 60 });
+    const text = await askText({ title: t('Modpack suchen'), value: packQuery, max: 60 });
     if (ui.top() === 'packbrowse') ui.focusEl(packSearchBtn, false);
     if (text === null) return;
     packQuery = text.trim();
@@ -973,7 +985,7 @@
       return;
     }
     if (!res.versions.length) {
-      ui.toast('Für dieses Modpack gibt es keine passende Version.');
+      ui.toast(t('Für dieses Modpack gibt es keine passende Version.'));
       return;
     }
     if (ui.top() !== 'packbrowse') return;
@@ -987,9 +999,9 @@
       ...versions.map((v) => {
         const row = button('tile setting');
         const left = el('span', 'item');
-        left.append(el('span', '', `Minecraft ${v.mc}`));
+        left.append(el('span', '', t('Minecraft {version}', { version: v.mc })));
         const loader = LOADER_NAMES[v.loader] || v.loader;
-        const state = v.id === currentId ? 'Installiert' : v.beta ? 'Beta' : null;
+        const state = v.id === currentId ? t('Installiert') : v.beta ? t('Beta') : null;
         row.append(left, el('span', 'value', [loader, v.name, state].filter(Boolean).join(' · ')));
         row.addEventListener('click', () => onPick(v));
         return row;
@@ -1015,19 +1027,19 @@
     if (packInstalling) return;
     if (version.id === packInst.managedVersionId) {
       ui.sound.play('bump');
-      notice('Diese Version ist schon installiert.');
+      notice(t('Diese Version ist schon installiert.'));
       return;
     }
     const otherGame = version.mc !== packInst.mc;
     const text = otherGame
-      ? `Das Pack wechselt auf Minecraft ${version.mc}. Welten vertragen das oft nicht, zurück geht es dann nicht mehr ohne Weiteres. Sichere wichtige Welten vorher.`
-      : 'Die Mods des Packs werden ersetzt. Welten, eigene Mods und von dir geänderte Einstellungen bleiben.';
-    const yes = await askConfirm({ title: `Auf „${version.name}“ wechseln?`, text, yes: 'Wechseln' });
+      ? t('Das Pack wechselt auf Minecraft {mc}. Welten vertragen das oft nicht, zurück geht es dann nicht mehr ohne Weiteres. Sichere wichtige Welten vorher.', { mc: version.mc })
+      : t('Die Mods des Packs werden ersetzt. Welten, eigene Mods und von dir geänderte Einstellungen bleiben.');
+    const yes = await askConfirm({ title: t('Auf „{version}“ wechseln?', { version: version.name }), text, yes: t('Wechseln') });
     if (!yes) return;
 
     packInstalling = true;
     $('#pack-install-title').textContent = packState.settings.name;
-    $('#pack-install-status').textContent = 'Modpack wird geladen …';
+    $('#pack-install-status').textContent = t('Modpack wird geladen …');
     $('#pack-install-bar').style.width = '0%';
     ui.sound.play('open');
     ui.openView('packinstall', null);
@@ -1039,7 +1051,7 @@
     }
     ui.closeTop(true);
     if (!res.ok) {
-      ui.toast(`Update fehlgeschlagen: ${res.error}`);
+      ui.toast(t('Update fehlgeschlagen: {error}', { error: res.error }));
       return;
     }
     // Versionsliste und Einstellungen zeigen noch die alte Version
@@ -1047,14 +1059,14 @@
     ui.closeTop(true);
     ui.sound.play('launch');
     await ui.refresh(packInst.id);
-    notice(`${packState.settings.name} ist jetzt auf ${version.name}`);
+    notice(t('{name} ist jetzt auf {version}', { name: packState.settings.name, version: version.name }));
   }
 
   async function installPack(hit, version) {
     if (packInstalling) return;
     packInstalling = true;
     $('#pack-install-title').textContent = hit.title;
-    $('#pack-install-status').textContent = 'Modpack wird geladen …';
+    $('#pack-install-status').textContent = t('Modpack wird geladen …');
     $('#pack-install-bar').style.width = '0%';
     ui.sound.play('open');
     ui.openView('packinstall', null);
@@ -1068,7 +1080,7 @@
     }
     ui.closeTop(true);
     if (!res.ok) {
-      ui.toast(`Installation fehlgeschlagen: ${res.error}`);
+      ui.toast(t('Installation fehlgeschlagen: {error}', { error: res.error }));
       return;
     }
     ui.closeTop(true);
@@ -1077,18 +1089,18 @@
     await ui.refresh(res.id);
     const instance = ui.instance(res.id);
     if (instance) ui.openDetails(instance);
-    notice(`${instance ? instance.name : hit.title} ist installiert`);
+    notice(t('{name} ist installiert', { name: instance ? instance.name : hit.title }));
   }
 
   couch.onPackProgress(({ done, total }) => {
-    $('#pack-install-status').textContent = `Dateien: ${done} von ${total}`;
+    $('#pack-install-status').textContent = t('Dateien: {done} von {total}', { done, total });
     $('#pack-install-bar').style.width = `${total ? Math.round((done / total) * 100) : 100}%`;
   });
 
   packSearchBtn.addEventListener('click', editPackQuery);
 
   ui.registerView('packbrowse', packBrowseEl, '#pack-search, #pack-results .tile', {
-    hints: () => ({ a: 'Auswählen', y: 'Suchen' }),
+    hints: () => ({ a: t('Auswählen'), y: t('Suchen') }),
     onButton(name) {
       if (name === 'y') editPackQuery();
       return name === 'y' || name === 'x' || name === 'lb' || name === 'rb';
@@ -1096,11 +1108,11 @@
   });
 
   ui.registerView('packversions', packVersionsEl, '#pack-versions-list .tile', {
-    hints: () => ({ a: versionsHint }),
+    hints: () => ({ a: t(versionsHint) }),
   });
 
   ui.registerView('packinstall', packInstallEl, '#pack-install button', {
-    hints: () => ({ a: ' ', b: 'Abbrechen' }),
+    hints: () => ({ a: ' ', b: t('Abbrechen') }),
     onClose() {
       if (packInstalling) couch.cancelPackInstall();
     },
@@ -1114,6 +1126,8 @@
     ui.openView('packbrowse', null, packSearchBtn);
     searchPacks();
   };
+
+  ui.onLanguage = buildOsk;
 
   buildOsk();
 })();

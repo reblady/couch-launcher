@@ -13,7 +13,7 @@
     <div class="top-right">
       <button class="tile pill" id="open-settings" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.5 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
-        Einstellungen
+        <span data-i18n>Einstellungen</span>
       </button>
       <div class="clock" id="clock"></div>
     </div>
@@ -21,7 +21,7 @@
 
   <main id="content">
     <section id="recent-section" hidden>
-      <h2>Zuletzt gespielt</h2>
+      <h2 data-i18n>Zuletzt gespielt</h2>
       <div class="grid recent" id="recent"></div>
     </section>
 
@@ -44,40 +44,40 @@
     <div class="details-body">
       <h1 id="details-name"></h1>
       <div class="row" id="details-actions">
-        <button class="tile btn play" type="button" data-action="launch">Spielen</button>
-        <button class="tile btn" type="button" data-action="mods">Mods verwalten</button>
-        <button class="tile btn" type="button" data-action="settings">Einstellungen</button>
-        <button class="tile btn" type="button" data-action="folder">Ordner öffnen</button>
-        <button class="tile btn" type="button" data-action="back">Zurück</button>
+        <button class="tile btn play" type="button" data-action="launch" data-i18n>Spielen</button>
+        <button class="tile btn" type="button" data-action="mods" data-i18n>Mods verwalten</button>
+        <button class="tile btn" type="button" data-action="settings" data-i18n>Einstellungen</button>
+        <button class="tile btn" type="button" data-action="folder" data-i18n>Ordner öffnen</button>
+        <button class="tile btn" type="button" data-action="back" data-i18n>Zurück</button>
       </div>
       <dl class="facts">
-        <div><dt>Minecraft</dt><dd id="details-mc"></dd></div>
-        <div><dt>Loader</dt><dd id="details-loader"></dd></div>
-        <div><dt>Spielzeit</dt><dd id="details-played"></dd></div>
-        <div><dt>Zuletzt gespielt</dt><dd id="details-last"></dd></div>
+        <div><dt data-i18n>Minecraft</dt><dd id="details-mc"></dd></div>
+        <div><dt data-i18n>Loader</dt><dd id="details-loader"></dd></div>
+        <div><dt data-i18n>Spielzeit</dt><dd id="details-played"></dd></div>
+        <div><dt data-i18n>Letzter Start</dt><dd id="details-last"></dd></div>
       </dl>
     </div>
   </section>
 
   <section class="details settings-page" id="settings" hidden>
     <div class="details-body">
-      <h1>Einstellungen</h1>
+      <h1 data-i18n>Einstellungen</h1>
       <div class="settings-list" id="settings-list"></div>
-      <p class="note">Mit links und rechts den Wert ändern, A schaltet weiter. Änderungen werden sofort gespeichert, Vollbild gilt ab dem nächsten Start.</p>
+      <p class="note" data-i18n>Mit links und rechts den Wert ändern, A schaltet weiter. Änderungen werden sofort gespeichert, Vollbild gilt ab dem nächsten Start.</p>
     </div>
   </section>
 
   <section class="details settings-page" id="newpack" hidden>
     <div class="details-body">
-      <h1>Neues Modpack</h1>
+      <h1 data-i18n>Neues Modpack</h1>
       <div class="settings-list" id="newpack-rows"></div>
-      <p class="note">Mit links und rechts Version und Loader wählen. Mods suchst du im nächsten Schritt aus.</p>
+      <p class="note" data-i18n>Mit links und rechts Version und Loader wählen. Mods suchst du im nächsten Schritt aus.</p>
     </div>
   </section>
 
   <section class="details settings-page content-page" id="pack-browse" hidden>
     <div class="details-body">
-      <h1>Modpack herunterladen</h1>
+      <h1 data-i18n>Modpack herunterladen</h1>
       <button class="tile setting" type="button" id="pack-search"></button>
       <p class="note" id="pack-status"></p>
       <div class="grid mod-grid" id="pack-results"></div>
@@ -87,7 +87,7 @@
   <section class="details settings-page" id="pack-versions" hidden>
     <div class="details-body">
       <h1 id="pack-versions-title"></h1>
-      <p class="note">Wähle die Minecraft-Version aus.</p>
+      <p class="note" data-i18n>Wähle die Minecraft-Version aus.</p>
       <div class="settings-list" id="pack-versions-list"></div>
     </div>
   </section>
@@ -96,7 +96,7 @@
     <div class="details-body">
       <h1 id="packsettings-title"></h1>
       <div class="settings-list" id="packsettings-rows"></div>
-      <p class="note">Mit links und rechts den Wert ändern. Änderungen werden sofort gespeichert und gelten ab dem nächsten Start.</p>
+      <p class="note" data-i18n>Mit links und rechts den Wert ändern. Änderungen werden sofort gespeichert und gelten ab dem nächsten Start.</p>
     </div>
   </section>
 
@@ -124,7 +124,7 @@
     <span id="hint-y-wrap"><b class="pad y">Y</b><kbd>R</kbd> <span id="hint-y">Neu laden</span></span>
     <span id="hint-lb-wrap" hidden><b class="pad wide">LB</b><b class="pad wide">RB</b><kbd>Q</kbd><kbd>E</kbd> <span id="hint-lb"></span></span>
     <span><b class="pad b">B</b><kbd>Esc</kbd> <span id="hint-b">Beenden</span></span>
-    <span><kbd>F11</kbd> Vollbild</span>
+    <span><kbd>F11</kbd> <span data-i18n>Vollbild</span></span>
   </footer>
 
   <div class="overlay launching" id="launching" hidden>
@@ -134,16 +134,16 @@
       <h2 id="launching-name"></h2>
       <p id="launching-status"></p>
       <div class="progress"><div></div></div>
-      <p class="small" id="launching-hint"><b class="pad b">B</b><kbd>Esc</kbd> blendet diese Anzeige aus</p>
+      <p class="small" id="launching-hint"><b class="pad b">B</b><kbd>Esc</kbd> <span data-i18n>blendet diese Anzeige aus</span></p>
     </div>
   </div>
 
   <div class="overlay" id="confirm" hidden>
     <div class="dialog" id="dialog">
-      <h2>Couch Launcher beenden?</h2>
+      <h2 data-i18n>Couch Launcher beenden?</h2>
       <div class="row">
-        <button class="tile btn" type="button" data-action="cancel">Abbrechen</button>
-        <button class="tile btn" type="button" data-action="quit">Beenden</button>
+        <button class="tile btn" type="button" data-action="cancel" data-i18n>Abbrechen</button>
+        <button class="tile btn" type="button" data-action="quit" data-i18n>Beenden</button>
       </div>
     </div>
   </div>
@@ -161,7 +161,7 @@
       <h2 id="osk-title"></h2>
       <div class="osk-text" id="osk-text"></div>
       <div class="osk-keys" id="osk-keys"></div>
-      <p class="note"><b class="pad">☰</b> Start bestätigt die Eingabe</p>
+      <p class="note"><b class="pad">☰</b> <span data-i18n>Start bestätigt die Eingabe</span></p>
     </div>
   </div>
 
@@ -170,13 +170,15 @@
       <h2 id="pack-install-title"></h2>
       <p id="pack-install-status"></p>
       <div class="progress determinate"><div id="pack-install-bar"></div></div>
-      <p class="small"><b class="pad b">B</b><kbd>Esc</kbd> bricht die Installation ab</p>
+      <p class="small"><b class="pad b">B</b><kbd>Esc</kbd> <span data-i18n>bricht die Installation ab</span></p>
     </div>
   </div>
 
   <div class="notice" id="notice" hidden></div>
   <div class="toast" id="toast" hidden></div>
 
+  <script src="lang-en.js"></script>
+  <script src="i18n.js"></script>
   <script src="nav.js"></script>
   <script src="input.js"></script>
   <script src="views.js"></script>

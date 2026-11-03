@@ -1,5 +1,7 @@
 'use strict';
 
+const { t } = require('./i18n');
+
 // Zugriff auf die Modrinth-API und Auflösen von Abhängigkeiten. Läuft nur im Hauptprozess,
 // der Renderer hat wegen der CSP keinen Netzzugriff.
 
@@ -22,7 +24,7 @@ function createFetchJson(fetchFn = fetch) {
       headers: { 'User-Agent': USER_AGENT, ...(options.headers || {}) },
       signal: AbortSignal.timeout(20000),
     });
-    if (!res.ok) throw new Error(`Server antwortet mit Fehler ${res.status}`);
+    if (!res.ok) throw new Error(t('Server antwortet mit Fehler {status}', { status: res.status }));
     return res.json();
   };
 }
@@ -207,11 +209,11 @@ function createClient(fetchFn = fetch) {
 
     while (queue.length) {
       const id = queue.shift();
-      if (seen.size - installed.size > MAX_DEPENDENCIES) throw new Error('Zu viele Abhängigkeiten.');
+      if (seen.size - installed.size > MAX_DEPENDENCIES) throw new Error(t('Zu viele Abhängigkeiten.'));
       const version = pickVersion(await projectVersions(id, ctx));
       const file = version && pickFile(version, exts);
       if (!file) {
-        if (id === rootId) throw new Error(`Keine passende Version für Minecraft ${ctx.mc}.`);
+        if (id === rootId) throw new Error(t('Keine passende Version für Minecraft {mc}.', { mc: ctx.mc }));
         missing.push(id);
         continue;
       }

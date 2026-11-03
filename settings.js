@@ -5,6 +5,16 @@
   // Auswahl-Einstellungen haben `options`, Regler haben `min`, `max`, `step`.
   const DEFS = [
     {
+      key: 'language',
+      label: 'Sprache',
+      options: [
+        { value: 'auto', label: 'Automatisch' },
+        { value: 'de', label: 'Deutsch' },
+        { value: 'en', label: 'English' },
+      ],
+      default: 'auto',
+    },
+    {
       key: 'aButton',
       label: 'A-Taste auf der Startseite',
       options: [

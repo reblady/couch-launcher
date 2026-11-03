@@ -1,5 +1,7 @@
 'use strict';
 
+const { t } = require('./i18n');
+
 // Installiert fertige Modpacks (.mrpack) als Prism-Instanz. Der Inhalt einer .mrpack-Datei kommt aus dem
 // Netz: Pfade und Download-Adressen werden deshalb genauso streng geprüft wie bei einzelnen Mods.
 
@@ -50,14 +52,14 @@ function isAllowedUrl(url) {
 function parseIndex(text) {
   const index = JSON.parse(text);
   const deps = index.dependencies || {};
-  if (index.game !== 'minecraft' || !deps.minecraft) throw new Error('Das ist kein Minecraft-Modpack.');
+  if (index.game !== 'minecraft' || !deps.minecraft) throw new Error(t('Das ist kein Minecraft-Modpack.'));
   const key = Object.keys(LOADER_KEYS).find((k) => deps[k]);
   const files = (index.files || []).filter((f) => !f.env || f.env.client !== 'unsupported');
   for (const f of files) {
-    if (!isSafePath(f.path)) throw new Error(`Unsicherer Pfad im Modpack: ${f.path}`);
-    if (!f.hashes || !/^[0-9a-f]{128}$/.test(f.hashes.sha512 || '')) throw new Error(`Prüfsumme fehlt: ${f.path}`);
+    if (!isSafePath(f.path)) throw new Error(t('Unsicherer Pfad im Modpack: {path}', { path: f.path }));
+    if (!f.hashes || !/^[0-9a-f]{128}$/.test(f.hashes.sha512 || '')) throw new Error(t('Prüfsumme fehlt: {path}', { path: f.path }));
     if (!Array.isArray(f.downloads) || !f.downloads.some(isAllowedUrl)) {
-      throw new Error(`Unerlaubte Download-Adresse: ${f.path}`);
+      throw new Error(t('Unerlaubte Download-Adresse: {path}', { path: f.path }));
     }
   }
   return {
@@ -76,7 +78,7 @@ function overrideEntries(entries) {
     for (const entry of entries) {
       if (!entry.name.startsWith(prefix) || entry.name.endsWith('/')) continue;
       const rel = entry.name.slice(prefix.length);
-      if (!isSafePath(rel)) throw new Error(`Unsicherer Pfad im Modpack: ${entry.name}`);
+      if (!isSafePath(rel)) throw new Error(t('Unsicherer Pfad im Modpack: {path}', { path: entry.name }));
       out.set(rel, entry);
     }
   }
@@ -99,23 +101,23 @@ async function downloadVerified(fetchFn, file) {
         headers: { 'User-Agent': 'couch-launcher/0.1.0' },
         signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT),
       });
-      if (!res.ok) throw new Error(`Fehler ${res.status}`);
+      if (!res.ok) throw new Error(t('Fehler {status}', { status: res.status }));
       const data = Buffer.from(await res.arrayBuffer());
       const hash = crypto.createHash('sha512').update(data).digest('hex');
-      if (hash !== file.hashes.sha512) throw new Error('Prüfsumme stimmt nicht');
+      if (hash !== file.hashes.sha512) throw new Error(t('Prüfsumme stimmt nicht'));
       return data;
     } catch (err) {
       lastError = err;
     }
   }
-  throw new Error(`${path.basename(file.path)}: ${lastError ? lastError.message : 'kein Download'}`);
+  throw new Error(`${path.basename(file.path)}: ${lastError ? lastError.message : t('kein Download')}`);
 }
 
 async function downloadAll(fetchFn, files, targetDir, onFile, isCancelled) {
   const queue = [...files];
   async function worker() {
     while (queue.length) {
-      if (isCancelled()) throw new Error('Abgebrochen.');
+      if (isCancelled()) throw new Error(t('Abgebrochen.'));
       const file = queue.shift();
       const data = await downloadVerified(fetchFn, file);
       const target = path.join(targetDir, file.path);
@@ -169,9 +171,9 @@ async function installMrpack({ fetchFn, instancesDir, iconsDir, buffer, meta, on
   removeLeftovers(instancesDir);
   const entries = zip.readEntries(buffer);
   const indexEntry = entries.find((e) => e.name === INDEX);
-  if (!indexEntry) throw new Error('Keine gültige Modpack-Datei.');
+  if (!indexEntry) throw new Error(t('Keine gültige Modpack-Datei.'));
   const pack = parseIndex(zip.extract(buffer, indexEntry).toString('utf8'));
-  if (pack.loader && !LOADERS[pack.loader]) throw new Error('Unbekannter Mod-Loader.');
+  if (pack.loader && !LOADERS[pack.loader]) throw new Error(t('Unbekannter Mod-Loader.'));
 
   const title = cleanName(meta.title || pack.name) || 'Modpack';
   const temp = path.join(instancesDir, `${TEMP_PREFIX}${process.pid}-${Date.now()}`);
@@ -212,7 +214,7 @@ function fileMatches(file, sha512) {
 function readPackFile(buffer) {
   const entries = zip.readEntries(buffer);
   const indexEntry = entries.find((e) => e.name === INDEX);
-  if (!indexEntry) throw new Error('Keine gültige Modpack-Datei.');
+  if (!indexEntry) throw new Error(t('Keine gültige Modpack-Datei.'));
   return {
     pack: parseIndex(zip.extract(buffer, indexEntry).toString('utf8')),
     overrides: overrideEntries(entries),
@@ -273,7 +275,7 @@ function writeInstanceFiles(instDir, pack, current, meta) {
 // Einstellungen bleiben. oldBuffer darf null sein, dann bleiben alte Pack-Dateien im Zweifel liegen.
 async function updateMrpack({ fetchFn, instDir, oldBuffer, buffer, current, meta, identify, onProgress, isCancelled }) {
   const next = readPackFile(buffer);
-  if (next.pack.loader && !LOADERS[next.pack.loader]) throw new Error('Unbekannter Mod-Loader.');
+  if (next.pack.loader && !LOADERS[next.pack.loader]) throw new Error(t('Unbekannter Mod-Loader.'));
   let old = null;
   try {
     old = oldBuffer ? readPackFile(oldBuffer) : null;
@@ -324,7 +326,7 @@ async function updateMrpack({ fetchFn, instDir, oldBuffer, buffer, current, meta
       if (!next.overrides.has(rel) && fs.existsSync(path.join(game, rel)) && unchanged(rel)) remove.push(rel);
     }
 
-    if (isCancelled()) throw new Error('Abgebrochen.');
+    if (isCancelled()) throw new Error(t('Abgebrochen.'));
 
     // Ab hier wird der Spielordner geändert
     for (const rel of remove) fs.rmSync(path.join(game, rel), { force: true });

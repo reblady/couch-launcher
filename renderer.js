@@ -1,6 +1,7 @@
 (function () {
   'use strict';
 
+  const { t } = window.I18n;
   const $ = (sel) => document.querySelector(sel);
   const recentSection = $('#recent-section');
   const recentGrid = $('#recent');
@@ -43,24 +44,28 @@
   function relTime(ms) {
     const diff = Date.now() - ms;
     const min = Math.floor(diff / 60000);
-    if (min < 2) return 'gerade eben';
-    if (min < 60) return `vor ${min} min`;
+    if (min < 2) return t('gerade eben');
+    if (min < 60) return t('vor {n} min', { n: min });
     const h = Math.floor(min / 60);
-    if (h < 24) return `vor ${h} h`;
+    if (h < 24) return t('vor {n} h', { n: h });
     const d = Math.floor(h / 24);
-    if (d === 1) return 'gestern';
-    if (d < 14) return `vor ${d} Tagen`;
-    return new Date(ms).toLocaleDateString('de-DE');
+    if (d === 1) return t('gestern');
+    if (d < 14) return t('vor {n} Tagen', { n: d });
+    return new Date(ms).toLocaleDateString(window.I18n.locale());
   }
 
   function fmtDate(ms) {
-    return new Date(ms).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
+    return new Date(ms).toLocaleString(window.I18n.locale(), { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  function fmtDuration(sec) {
+    if (sec < 3600) return t('{n} min', { n: Math.max(1, Math.round(sec / 60)) });
+    const h = (sec / 3600).toLocaleString(window.I18n.locale(), { maximumFractionDigits: 1 });
+    return t('{n} h', { n: h });
   }
 
   function fmtPlayed(sec) {
-    if (sec < 3600) return `${Math.max(1, Math.round(sec / 60))} min gespielt`;
-    const h = sec / 3600;
-    return `${h.toLocaleString('de-DE', { maximumFractionDigits: 1 })} h gespielt`;
+    return t('{time} gespielt', { time: fmtDuration(sec) });
   }
 
   function toast(message) {
@@ -74,7 +79,7 @@
   }
 
   function updateClock() {
-    $('#clock').textContent = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    $('#clock').textContent = new Date().toLocaleTimeString(window.I18n.locale(), { hour: '2-digit', minute: '2-digit' });
   }
 
   // ---------- Rendering ----------
@@ -128,7 +133,7 @@
     const stats = document.createElement('div');
     stats.className = 'meta';
     stats.textContent = [
-      inst.lastLaunch ? `Zuletzt ${relTime(inst.lastLaunch)}` : 'Noch nie gespielt',
+      inst.lastLaunch ? t('Zuletzt {when}', { when: relTime(inst.lastLaunch) }) : t('Noch nie gespielt'),
       inst.playedSeconds ? fmtPlayed(inst.playedSeconds) : null,
     ]
       .filter(Boolean)
@@ -161,11 +166,11 @@
   }
 
   function makeNewPackTile() {
-    return makeActionTile('+', 'Neues Modpack', 'Selbst zusammenstellen', () => ui.newPack());
+    return makeActionTile('+', t('Neues Modpack'), t('Selbst zusammenstellen'), () => ui.newPack());
   }
 
   function makeFindPackTile() {
-    return makeActionTile('↓', 'Modpack herunterladen', 'Fertige Packs von Modrinth', () => ui.browsePacks());
+    return makeActionTile('↓', t('Modpack herunterladen'), t('Fertige Packs von Modrinth'), () => ui.browsePacks());
   }
 
   function makeButton(label, onClick) {
@@ -188,16 +193,18 @@
       allSection.hidden = true;
       emptySection.hidden = false;
       if (listing.dir) {
-        emptyTitle.textContent = 'Keine Instanzen gefunden';
-        emptyText.textContent = `Der Ordner ${listing.dir} enthält keine Prism-Instanzen.`;
+        emptyTitle.textContent = t('Keine Instanzen gefunden');
+        emptyText.textContent = t('Der Ordner {dir} enthält keine Prism-Instanzen.', { dir: listing.dir });
       } else {
-        emptyTitle.textContent = 'Prism-Ordner nicht gefunden';
+        emptyTitle.textContent = t('Prism-Ordner nicht gefunden');
         emptyText.textContent =
-          'Gesucht wurde in:\n' +
+          t('Gesucht wurde in:') +
+          '\n' +
           listing.tried.join('\n') +
-          '\n\nTrage den richtigen Pfad als "instancesDir" in config.json ein.';
+          '\n\n' +
+          t('Trage den richtigen Pfad als "instancesDir" in config.json ein.');
       }
-      emptyActions.appendChild(makeButton('Neu laden', () => refresh()));
+      emptyActions.appendChild(makeButton(t('Neu laden'), () => refresh()));
       if (listing.dir) emptyActions.append(makeNewPackTile(), makeFindPackTile());
       return;
     }
@@ -211,7 +218,7 @@
     allGrid.append(makeNewPackTile(), makeFindPackTile());
     recentSection.hidden = recent.length === 0;
     allSection.hidden = false;
-    allTitle.textContent = recent.length ? 'Weitere Instanzen' : 'Alle Instanzen';
+    allTitle.textContent = recent.length ? t('Weitere Instanzen') : t('Alle Instanzen');
   }
 
   function fillDetails(inst) {
@@ -219,31 +226,31 @@
     art.replaceChildren();
     fillArt(art, inst);
     $('#details-name').textContent = inst.name;
-    $('#details-mc').textContent = inst.mc || 'unbekannt';
+    $('#details-mc').textContent = inst.mc || t('unbekannt');
     $('#details-loader').textContent = inst.loader || 'Vanilla';
-    $('#details-played').textContent = inst.playedSeconds ? fmtPlayed(inst.playedSeconds).replace(' gespielt', '') : '–';
+    $('#details-played').textContent = inst.playedSeconds ? fmtDuration(inst.playedSeconds) : '–';
     $('#details-last').textContent = inst.lastLaunch
       ? `${relTime(inst.lastLaunch)} (${fmtDate(inst.lastLaunch)})`
-      : 'Noch nie';
+      : t('Noch nie');
   }
 
   // Fußleiste passend zur obersten Ansicht beschriften
   function updateHints() {
     const view = views.top().name;
-    const label = { details: 'Details', launch: 'Starten' };
+    const label = { details: t('Details'), launch: t('Starten') };
     const ext = VIEW_EXT[view];
     const custom = ext && ext.hints ? ext.hints() : {};
     const home = view === 'home';
     const x = home ? label[actions.x] : custom.x;
-    const y = home ? 'Neu laden' : custom.y;
-    $('#hint-a').textContent = custom.a || (home ? label[actions.a] : view === 'settings' ? 'Ändern' : 'Auswählen');
+    const y = home ? t('Neu laden') : custom.y;
+    $('#hint-a').textContent = custom.a || (home ? label[actions.a] : view === 'settings' ? t('Ändern') : t('Auswählen'));
     $('#hint-x').textContent = x || '';
     $('#hint-x-wrap').hidden = !x;
     $('#hint-y').textContent = y || '';
     $('#hint-y-wrap').hidden = !y;
     $('#hint-lb').textContent = custom.lb || '';
     $('#hint-lb-wrap').hidden = !custom.lb;
-    $('#hint-b').textContent = custom.b || (home ? 'Beenden' : 'Zurück');
+    $('#hint-b').textContent = custom.b || (home ? t('Beenden') : t('Zurück'));
   }
 
   async function refresh(keepId) {
@@ -257,7 +264,7 @@
     try {
       listing = await window.couch.listInstances();
     } catch (err) {
-      toast(`Instanzen konnten nicht geladen werden: ${err.message}`);
+      toast(t('Instanzen konnten nicht geladen werden: {error}', { error: err.message }));
       return;
     }
     render(listing);
@@ -399,8 +406,37 @@
 
   // ---------- Einstellungen ----------
 
+  // Feste Texte aus index.html. Der deutsche Text wird beim ersten Mal als Schlüssel gemerkt.
+  function applyStaticTexts() {
+    document.documentElement.lang = window.I18n.language();
+    for (const node of document.querySelectorAll('[data-i18n]')) {
+      if (!node.dataset.i18n) node.dataset.i18n = node.textContent.trim();
+      node.textContent = t(node.dataset.i18n);
+    }
+  }
+
+  // Wechselt die Sprache sofort: feste Texte, Kacheln, offene Einstellungen, Tastatur
+  function applyLanguage(setting) {
+    const lang = window.I18n.resolve(setting, navigator.language);
+    const changed = lang !== window.I18n.language();
+    window.I18n.setLanguage(lang);
+    applyStaticTexts();
+    if (!changed) return;
+    updateClock();
+    if (instances.length) refresh();
+    if (views.has('settings')) {
+      const key = document.activeElement && document.activeElement.dataset.key;
+      renderSettings();
+      const row = settingsList.querySelector(`[data-key="${key}"]`);
+      if (row) focusEl(row, false);
+    }
+    ui.onLanguage();
+  }
+
   function applySettings(next) {
+    const languageChanged = next.language !== settings.language;
     settings = next;
+    if (languageChanged) applyLanguage(settings.language);
     actions = window.Views.tileActions(settings.aButton);
     sound.configure({ enabled: settings.sounds, volume: settings.volume });
     updateHints();
@@ -412,14 +448,14 @@
     const atEnd = def.options ? def.options[def.options.length - 1].value === value : value >= def.max;
 
     const label = document.createElement('span');
-    label.textContent = def.label;
+    label.textContent = t(def.label);
     const box = document.createElement('span');
     box.className = 'value';
     const left = document.createElement('span');
     left.className = atStart ? 'arrow off' : 'arrow';
     left.textContent = '‹';
     const text = document.createElement('span');
-    text.textContent = S.valueLabel(def, value);
+    text.textContent = t(S.valueLabel(def, value));
     const right = document.createElement('span');
     right.className = atEnd ? 'arrow off' : 'arrow';
     right.textContent = '›';
@@ -521,9 +557,9 @@
   }
 
   const STAGE_TEXT = {
-    spawn: 'Prism wird gestartet …',
-    loading: 'Minecraft lädt …',
-    started: 'Viel Spaß!',
+    spawn: t('Prism wird gestartet …'),
+    loading: t('Minecraft lädt …'),
+    started: t('Viel Spaß!'),
   };
 
   function setLaunchStage(stage) {
@@ -698,6 +734,7 @@
     confirmControlify: async () => true,
     openPackSettings() {},
     browsePacks() {},
+    onLanguage() {},
   };
   window.CouchUI = ui;
 
@@ -706,6 +743,7 @@
   updateClock();
   setInterval(updateClock, 30000);
   showCursor();
+  applyLanguage(settings.language);
   updateHints();
   window.couch
     .getSettings()

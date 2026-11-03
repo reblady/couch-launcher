@@ -1,5 +1,7 @@
 'use strict';
 
+const { t } = require('./i18n');
+
 const fs = require('fs');
 const path = require('path');
 const { sanitizePatch } = require('./settings');
@@ -21,16 +23,16 @@ function saveConfigPatch(file, patch) {
   try {
     text = fs.readFileSync(file, 'utf8');
   } catch (err) {
-    if (err.code !== 'ENOENT') return { ok: false, error: `config.json nicht lesbar: ${err.message}` };
+    if (err.code !== 'ENOENT') return { ok: false, error: t('config.json nicht lesbar: {error}', { error: err.message }) };
   }
   if (text !== null) {
     try {
       cfg = JSON.parse(text);
     } catch {
-      return { ok: false, error: 'config.json enthält einen Fehler und wird nicht überschrieben.' };
+      return { ok: false, error: t('config.json enthält einen Fehler und wird nicht überschrieben.') };
     }
     if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg)) {
-      return { ok: false, error: 'config.json hat ein unerwartetes Format und wird nicht überschrieben.' };
+      return { ok: false, error: t('config.json hat ein unerwartetes Format und wird nicht überschrieben.') };
     }
   }
   Object.assign(cfg, clean);
@@ -43,7 +45,7 @@ function saveConfigPatch(file, patch) {
     try {
       fs.rmSync(tmp, { force: true });
     } catch {}
-    return { ok: false, error: `Einstellungen nicht gespeichert: ${err.message}` };
+    return { ok: false, error: t('Einstellungen nicht gespeichert: {error}', { error: err.message }) };
   }
   return { ok: true, config: cfg };
 }

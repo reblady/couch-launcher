@@ -1,5 +1,9 @@
 'use strict';
 
+const i18n = require('./i18n');
+
+const { t } = i18n;
+
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
@@ -35,8 +39,11 @@ function migrateConfig() {
 }
 migrateConfig();
 
+// Liest die Einstellungen und stellt dabei die Sprache für Meldungen aus dem Hauptprozess ein
 function loadConfig() {
-  return configFile.loadConfig(CONFIG_PATH);
+  const cfg = configFile.loadConfig(CONFIG_PATH);
+  i18n.setLanguage(i18n.resolve(normalize(cfg).language, app.isReady() ? app.getLocale() : ''));
+  return cfg;
 }
 
 function send(channel, payload) {
@@ -106,11 +113,11 @@ function prepareFullscreen(cfg, instDir) {
 
 ipcMain.handle('instances:launch', (_event, id) => {
   const cfg = loadConfig();
-  if (!isValidId(id)) return { ok: false, error: 'Ungültige Instanz.' };
+  if (!isValidId(id)) return { ok: false, error: t('Ungültige Instanz.') };
 
   const listing = lastListing || listInstances(cfg, CONFIG_DIR);
   if (!listing.instances.some((i) => i.id === id)) {
-    return { ok: false, error: 'Instanz nicht gefunden. Liste neu laden (Y oder R).' };
+    return { ok: false, error: t('Instanz nicht gefunden. Liste neu laden (Y oder R).') };
   }
 
   prepareFullscreen(cfg, path.join(listing.dir, id));
@@ -124,7 +131,7 @@ ipcMain.handle('instances:launch', (_event, id) => {
   try {
     child = spawn(cmd, args, { stdio: 'ignore', detached: mode === 'quit' });
   } catch (err) {
-    return { ok: false, error: `Start fehlgeschlagen: ${err.message}` };
+    return { ok: false, error: t('Start fehlgeschlagen: {error}', { error: err.message }) };
   }
 
   let settled = false;
@@ -135,8 +142,8 @@ ipcMain.handle('instances:launch', (_event, id) => {
     showWindow();
     const msg =
       err.code === 'ENOENT'
-        ? `Prism nicht gefunden (Befehl: ${cmd}). Trage "prismCommand" in config.json ein.`
-        : `Start fehlgeschlagen: ${err.message}`;
+        ? t('Prism nicht gefunden (Befehl: {cmd}). Trage "prismCommand" in config.json ein.', { cmd })
+        : t('Start fehlgeschlagen: {error}', { error: err.message });
     send('launch:ended', { ok: false, error: msg });
   });
   child.on('spawn', () => {
@@ -162,13 +169,13 @@ ipcMain.handle('instances:launch', (_event, id) => {
 });
 
 ipcMain.handle('instances:open-folder', async (_event, id) => {
-  if (!isValidId(id)) return { ok: false, error: 'Ungültige Instanz.' };
+  if (!isValidId(id)) return { ok: false, error: t('Ungültige Instanz.') };
   const listing = lastListing || listInstances(loadConfig(), CONFIG_DIR);
   if (!listing.dir || !listing.instances.some((i) => i.id === id)) {
-    return { ok: false, error: 'Instanz nicht gefunden. Liste neu laden (Y oder R).' };
+    return { ok: false, error: t('Instanz nicht gefunden. Liste neu laden (Y oder R).') };
   }
   const error = await shell.openPath(path.join(listing.dir, id));
-  return error ? { ok: false, error: `Ordner konnte nicht geöffnet werden: ${error}` } : { ok: true };
+  return error ? { ok: false, error: t('Ordner konnte nicht geöffnet werden: {error}', { error }) } : { ok: true };
 });
 
 ipcMain.handle('settings:get', () => normalize(loadConfig()));
@@ -186,12 +193,12 @@ let installing = false;
 
 // Version und Loader kommen aus der Instanz selbst, nicht vom Renderer
 function contentContext(id, type) {
-  if (!isValidId(id) || !packs.CONTENT[type]) throw new Error('Ungültige Anfrage.');
+  if (!isValidId(id) || !packs.CONTENT[type]) throw new Error(t('Ungültige Anfrage.'));
   const listing = lastListing || listInstances(loadConfig(), CONFIG_DIR);
   const inst = listing.instances.find((i) => i.id === id);
-  if (!listing.dir || !inst) throw new Error('Instanz nicht gefunden. Liste neu laden (Y oder R).');
-  if (!inst.mc) throw new Error('Minecraft-Version der Instanz ist unbekannt.');
-  if (type === 'mod' && !inst.loader) throw new Error('Diese Instanz hat keinen Mod-Loader.');
+  if (!listing.dir || !inst) throw new Error(t('Instanz nicht gefunden. Liste neu laden (Y oder R).'));
+  if (!inst.mc) throw new Error(t('Minecraft-Version der Instanz ist unbekannt.'));
+  if (type === 'mod' && !inst.loader) throw new Error(t('Diese Instanz hat keinen Mod-Loader.'));
   return {
     instDir: path.join(listing.dir, id),
     type,
@@ -205,6 +212,7 @@ function contentContext(id, type) {
 // Fehler als Ergebnis zurückgeben, damit der Renderer sie als Meldung zeigen kann
 function handle(channel, fn) {
   ipcMain.handle(channel, async (_event, args) => {
+    loadConfig();
     try {
       return { ok: true, ...(await fn(args || {})) };
     } catch (err) {
@@ -217,10 +225,10 @@ handle('modpack:options', () => packs.fetchOptions(fetchJson));
 
 handle('modpack:create', async ({ name, mc, loader }) => {
   const listing = listInstances(loadConfig(), CONFIG_DIR);
-  if (!listing.dir) throw new Error('Prism-Ordner nicht gefunden.');
-  if (!packs.LOADERS[loader] || typeof mc !== 'string') throw new Error('Ungültige Auswahl.');
+  if (!listing.dir) throw new Error(t('Prism-Ordner nicht gefunden.'));
+  if (!packs.LOADERS[loader] || typeof mc !== 'string') throw new Error(t('Ungültige Auswahl.'));
   const version = await packs.loaderVersion(fetchJson, loader, mc);
-  if (!version) throw new Error(`${packs.LOADERS[loader].label} gibt es nicht für Minecraft ${mc}.`);
+  if (!version) throw new Error(t('{loader} gibt es nicht für Minecraft {mc}.', { loader: packs.LOADERS[loader].label, mc }));
   const id = packs.createInstance(listing.dir, { name, mc, loader, version });
   lastListing = listInstances(loadConfig(), CONFIG_DIR);
   return { id };
@@ -239,20 +247,20 @@ handle('modpack:search', ({ query, offset }) =>
 );
 
 handle('modpack:versions', async ({ projectId }) => {
-  if (typeof projectId !== 'string' || !ID_PATTERN.test(projectId)) throw new Error('Ungültiges Projekt.');
+  if (typeof projectId !== 'string' || !ID_PATTERN.test(projectId)) throw new Error(t('Ungültiges Projekt.'));
   return { versions: await modrinth.packVersions(projectId) };
 });
 
 async function fetchPackFile(version) {
   const file = pickFile(version, ['.mrpack']);
-  if (!file) throw new Error('Diese Version hat keine Modpack-Datei.');
-  if (file.size > MAX_PACK_FILE) throw new Error('Die Modpack-Datei ist zu groß.');
-  if (new URL(file.url).hostname !== 'cdn.modrinth.com') throw new Error('Unerwartete Download-Adresse.');
+  if (!file) throw new Error(t('Diese Version hat keine Modpack-Datei.'));
+  if (file.size > MAX_PACK_FILE) throw new Error(t('Die Modpack-Datei ist zu groß.'));
+  if (new URL(file.url).hostname !== 'cdn.modrinth.com') throw new Error(t('Unerwartete Download-Adresse.'));
   const res = await fetch(file.url, { headers: { 'User-Agent': 'couch-launcher/0.1.0' } });
-  if (!res.ok) throw new Error(`Download fehlgeschlagen (${res.status})`);
+  if (!res.ok) throw new Error(t('Download fehlgeschlagen ({status})', { status: res.status }));
   const buffer = Buffer.from(await res.arrayBuffer());
   if (crypto.createHash('sha512').update(buffer).digest('hex') !== file.hashes.sha512) {
-    throw new Error('Prüfsumme der Modpack-Datei stimmt nicht.');
+    throw new Error(t('Prüfsumme der Modpack-Datei stimmt nicht.'));
   }
   return buffer;
 }
@@ -267,17 +275,17 @@ async function fetchOldPack(versionId) {
 }
 
 handle('modpack:switch', async ({ id, versionId }) => {
-  if (typeof versionId !== 'string' || !ID_PATTERN.test(versionId)) throw new Error('Ungültige Version.');
-  if (!isValidId(id)) throw new Error('Ungültige Instanz.');
-  if (installing) throw new Error('Es läuft gerade schon eine Installation.');
+  if (typeof versionId !== 'string' || !ID_PATTERN.test(versionId)) throw new Error(t('Ungültige Version.'));
+  if (!isValidId(id)) throw new Error(t('Ungültige Instanz.'));
+  if (installing) throw new Error(t('Es läuft gerade schon eine Installation.'));
   const listing = listInstances(loadConfig(), CONFIG_DIR);
   const inst = listing.instances.find((i) => i.id === id);
-  if (!listing.dir || !inst || !inst.managedId) throw new Error('Das ist kein Modpack von Modrinth.');
+  if (!listing.dir || !inst || !inst.managedId) throw new Error(t('Das ist kein Modpack von Modrinth.'));
   installing = true;
   packCancelled = false;
   try {
     const version = await modrinth.version(versionId);
-    if (version.project_id !== inst.managedId) throw new Error('Diese Version gehört zu einem anderen Modpack.');
+    if (version.project_id !== inst.managedId) throw new Error(t('Diese Version gehört zu einem anderen Modpack.'));
     const buffer = await fetchPackFile(version);
     await updateMrpack({
       fetchFn: fetch,
@@ -299,10 +307,10 @@ handle('modpack:switch', async ({ id, versionId }) => {
 
 // Titel, Datei und Bild holt der Hauptprozess selbst, der Renderer nennt nur die Versions-ID
 handle('modpack:install', async ({ versionId }) => {
-  if (typeof versionId !== 'string' || !ID_PATTERN.test(versionId)) throw new Error('Ungültige Version.');
-  if (installing) throw new Error('Es läuft gerade schon eine Installation.');
+  if (typeof versionId !== 'string' || !ID_PATTERN.test(versionId)) throw new Error(t('Ungültige Version.'));
+  if (installing) throw new Error(t('Es läuft gerade schon eine Installation.'));
   const listing = listInstances(loadConfig(), CONFIG_DIR);
-  if (!listing.dir) throw new Error('Prism-Ordner nicht gefunden.');
+  if (!listing.dir) throw new Error(t('Prism-Ordner nicht gefunden.'));
   installing = true;
   packCancelled = false;
   const progress = (data) => send('modpack:progress', data);
@@ -391,7 +399,7 @@ function javaTooOld(ctx, needs) {
 async function ensureLoader(ctx, required) {
   if (ctx.loader !== 'fabric' || !required || !ctx.loaderVersion || !isNewer(required, ctx.loaderVersion)) return;
   const newest = await packs.loaderVersion(fetchJson, 'fabric', ctx.mc);
-  if (!newest || isNewer(required, newest)) throw new Error(`Fabric Loader ${required} ist für Minecraft ${ctx.mc} nicht verfügbar.`);
+  if (!newest || isNewer(required, newest)) throw new Error(t('Fabric Loader {version} ist für Minecraft {mc} nicht verfügbar.', { version: required, mc: ctx.mc }));
   packs.setLoaderVersion(ctx.instDir, 'fabric', newest);
   ctx.loaderVersion = newest;
   lastListing = listInstances(loadConfig(), CONFIG_DIR);
@@ -411,7 +419,7 @@ async function installedModInfos(ctx, except = new Set()) {
 
 async function installProject(ctx, projectId) {
   const { type } = ctx;
-  if (installing) throw new Error('Es läuft gerade schon eine Installation.');
+  if (installing) throw new Error(t('Es läuft gerade schon eine Installation.'));
   installing = true;
   try {
     const existing = await packs.hashContent(ctx.instDir, type, packs.listContent(ctx.instDir, type));
@@ -427,14 +435,14 @@ async function installProject(ctx, projectId) {
       send('content:progress', { done: i, total: plan.length, title: titleOf(step.projectId) });
       const { data, needs } = await fetchChecked(ctx, step.file);
       if (javaTooOld(ctx, needs)) {
-        throw new Error(`${titleOf(step.projectId)} braucht Java ${needs.java}, hier läuft Java ${ctx.javaMajor}.`);
+        throw new Error(t('{name} braucht Java {java}, hier läuft Java {have}.', { name: titleOf(step.projectId), java: needs.java, have: ctx.javaMajor }));
       }
       loaderNeeded = maxVersion(loaderNeeded, needs.loader);
       loaded.push({ file: step.file, data });
     }
     if (type === 'mod') {
       const [conflict] = findConflicts(loaded.map((l) => readModInfo(l.data)), await installedModInfos(ctx));
-      if (conflict) throw new Error(`${conflict.a} verträgt sich nicht mit ${conflict.b}. Es wurde nichts installiert.`);
+      if (conflict) throw new Error(t('{a} verträgt sich nicht mit {b}. Es wurde nichts installiert.', { a: conflict.a, b: conflict.b }));
     }
     await ensureLoader(ctx, loaderNeeded);
     for (const { file, data } of loaded) packs.writeContent(ctx.instDir, type, file, data);
@@ -461,7 +469,7 @@ handle('content:updates', async ({ id, type }) => {
 
 // Die Liste wird hier neu ermittelt: Der Renderer sagt nur, dass aktualisiert werden soll
 handle('content:update', async ({ id, type, file }) => {
-  if (installing) throw new Error('Es läuft gerade schon eine Installation.');
+  if (installing) throw new Error(t('Es läuft gerade schon eine Installation.'));
   const ctx = contentContext(id, type);
   const { exts } = packs.CONTENT[type];
   installing = true;
@@ -480,12 +488,13 @@ handle('content:update', async ({ id, type, file }) => {
       send('content:progress', { done: i, total: updates.length, title: u.item.name });
       const { data, needs } = await fetchChecked(ctx, u.file);
       if (javaTooOld(ctx, needs)) {
-        skipped.push(`${u.item.name} (braucht Java ${needs.java})`);
+        skipped.push(t('{name} (braucht Java {java})', { name: u.item.name, java: needs.java }));
         continue;
       }
       const [conflict] = type === 'mod' ? findConflicts([readModInfo(data)], others) : [];
       if (conflict) {
-        skipped.push(`${u.item.name} (verträgt sich nicht mit ${conflict.a === u.item.name ? conflict.b : conflict.a})`);
+        const other = conflict.a === u.item.name ? conflict.b : conflict.a;
+        skipped.push(t('{name} (verträgt sich nicht mit {other})', { name: u.item.name, other }));
         continue;
       }
       loaderNeeded = maxVersion(loaderNeeded, needs.loader);
@@ -539,14 +548,14 @@ handle('content:update', async ({ id, type, file }) => {
 });
 
 handle('content:install', ({ id, type, projectId }) => {
-  if (typeof projectId !== 'string' || !/^[A-Za-z0-9]{1,32}$/.test(projectId)) throw new Error('Ungültiges Projekt.');
+  if (typeof projectId !== 'string' || !/^[A-Za-z0-9]{1,32}$/.test(projectId)) throw new Error(t('Ungültiges Projekt.'));
   return installProject(contentContext(id, type), projectId);
 });
 
 function instanceCfgPath(id) {
   const listing = listInstances(loadConfig(), CONFIG_DIR);
   if (!isValidId(id) || !listing.dir || !listing.instances.some((i) => i.id === id)) {
-    throw new Error('Instanz nicht gefunden.');
+    throw new Error(t('Instanz nicht gefunden.'));
   }
   return { file: path.join(listing.dir, id, 'instance.cfg'), dataDir: path.dirname(listing.dir) };
 }
@@ -585,7 +594,7 @@ handle('instance:save', ({ id, patch }) => {
 handle('instance:delete', async ({ id }) => {
   const listing = listInstances(loadConfig(), CONFIG_DIR);
   if (!isValidId(id) || !listing.dir || !listing.instances.some((i) => i.id === id)) {
-    throw new Error('Instanz nicht gefunden.');
+    throw new Error(t('Instanz nicht gefunden.'));
   }
   await shell.trashItem(path.join(listing.dir, id));
   lastListing = listInstances(loadConfig(), CONFIG_DIR);

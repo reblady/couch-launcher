@@ -4,7 +4,16 @@
   // Bildschirmtastatur: Layout und Tastenlogik, ohne DOM (läuft auch in Node-Tests)
   // Alle Reihen sind gleich breit, damit die Spalten genau untereinander stehen. span: Breite in Spalten.
   const COLUMNS = 10;
-  const ROWS = ['1234567890', 'qwertzuiop', 'asdfghjkl+', 'yxcvbnm-_.'];
+  // Pro Sprache das gewohnte Layout: QWERTZ für Deutsch, sonst QWERTY
+  const LAYOUTS = {
+    de: ['1234567890', 'qwertzuiop', 'asdfghjkl+', 'yxcvbnm-_.'],
+    en: ['1234567890', 'qwertyuiop', 'asdfghjkl+', 'zxcvbnm-_.'],
+  };
+  const ROWS = LAYOUTS.de;
+
+  function rowsFor(lang) {
+    return LAYOUTS[lang] || LAYOUTS.en;
+  }
   const SPECIAL = [
     { key: 'shift', label: 'Groß', span: 2 },
     { key: 'space', label: 'Leerzeichen', span: 4 },
@@ -25,7 +34,7 @@
     return { ...state, text: state.text + (state.shift ? ch.toUpperCase() : ch), shift: false };
   }
 
-  const api = { COLUMNS, ROWS, SPECIAL, createState, applyKey };
+  const api = { COLUMNS, ROWS, LAYOUTS, rowsFor, SPECIAL, createState, applyKey };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Osk = api;
 })(typeof window !== 'undefined' ? window : this);
