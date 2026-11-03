@@ -19,7 +19,7 @@ npm test                 # Tests für Instanzen, Startbefehl, Navigation, Eingab
 npm run dist             # AppImage nach dist/ bauen
 ```
 
-Releases: Ein Tag `v*` startet `.github/workflows/release.yml`, das testet, die AppImage baut und an ein GitHub-Release hängt. Vor einem Tag die Version in `package.json` anheben.
+Repo: https://github.com/reblady/couch-launcher (öffentlich, Commits als `reblady` mit Noreply-Adresse, nur in diesem Repo eingestellt). Releases: Ein Tag `v*` startet `.github/workflows/release.yml`, das testet, die AppImage baut und an ein GitHub-Release hängt. Vor einem Tag die Version in `package.json` anheben.
 
 ## Aufbau
 
@@ -83,6 +83,7 @@ Releases: Ein Tag `v*` startet `.github/workflows/release.yml`, das testet, die 
 
 ## Stand
 
+Release 0.1.0 veröffentlicht (3.11.2026): GitHub Actions hat getestet und die AppImage gebaut, der Download funktioniert. Die lokal gebaute AppImage startet ohne Fehler, bedient wurde sie noch nicht.
 Vom Nutzer bestätigt: Instanzen werden angezeigt, Starten klappt, Controller und Tastatur funktionieren, Detailseite, Einstellungen, Sounds, Ladeanimation mit echtem Spielstart.
 Gegen die echte Modrinth- und Prism-Meta-API getestet (Anlegen, Suche, Abhängigkeiten, Download, Hash-Erkennung), aber in einer Wegwerf-Instanz außerhalb von Prism.
 Selbst angelegte Instanz (Fabric, 26.3, ein Mod) startet in Prism: Prism hat LWJGL und Intermediary ergänzt, Minecraft lief bis `Setting user:`.
@@ -113,7 +114,7 @@ Nicht geprüft: Konflikt-Prüfung in Electron, Pack-Wechsel in Electron und ob d
 5. **Fertige Modpacks:** Erledigt, siehe Stand. Kachel „Modpack herunterladen“, Suche, Auswahl der Minecraft-Version, Fortschritt, Abbrechen mit B.
 6. **Mods aktualisieren:** Erledigt, siehe Stand. Einzeln mit Y, alle auf einmal nur bei selbst gebauten Packs.
 7. **Pack-Versionen:** Erledigt, siehe Stand. Zeile „Modpack-Version“ in den Einstellungen des Modpacks.
-8. **Offen:** Alte Dateien vor Updates sichern, damit sie sich zurücknehmen lassen. Das Projekt ist noch kein Git-Repository, der Nutzer wurde dazu bisher nicht gefragt.
+8. **Offen:** Alte Dateien vor Updates sichern, damit sie sich zurücknehmen lassen.
 9. **Später:** Instanz kopieren, Welten und Screenshots.
 
 ## Testen der Oberfläche
