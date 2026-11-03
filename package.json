@@ -48,7 +48,8 @@
       "syncDesktopName": true
     },
     "publish": {
-      "provider": "github"
+      "provider": "github",
+      "releaseType": "release"
     }
   },
   "desktopName": "couch-launcher.desktop"
