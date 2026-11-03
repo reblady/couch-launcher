@@ -1,0 +1,36 @@
+'use strict';
+
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('couch', {
+  listInstances: () => ipcRenderer.invoke('instances:list'),
+  launch: (id) => ipcRenderer.invoke('instances:launch', id),
+  openFolder: (id) => ipcRenderer.invoke('instances:open-folder', id),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  saveSettings: (patch) => ipcRenderer.invoke('settings:set', patch),
+  quit: () => ipcRenderer.send('app:quit'),
+  toggleFullscreen: () => ipcRenderer.send('app:toggle-fullscreen'),
+  packOptions: () => ipcRenderer.invoke('modpack:options'),
+  createPack: (args) => ipcRenderer.invoke('modpack:create', args),
+  searchContent: (args) => ipcRenderer.invoke('content:search', args),
+  installedContent: (args) => ipcRenderer.invoke('content:installed', args),
+  installContent: (args) => ipcRenderer.invoke('content:install', args),
+  findContentUpdates: (args) => ipcRenderer.invoke('content:updates', args),
+  updateContent: (args) => ipcRenderer.invoke('content:update', args),
+  toggleContent: (args) => ipcRenderer.invoke('content:toggle', args),
+  removeContent: (args) => ipcRenderer.invoke('content:remove', args),
+  searchPacks: (args) => ipcRenderer.invoke('modpack:search', args),
+  packVersions: (projectId) => ipcRenderer.invoke('modpack:versions', { projectId }),
+  installPack: (versionId) => ipcRenderer.invoke('modpack:install', { versionId }),
+  switchPackVersion: (id, versionId) => ipcRenderer.invoke('modpack:switch', { id, versionId }),
+  cancelPackInstall: () => ipcRenderer.send('modpack:cancel'),
+  onPackProgress: (cb) => ipcRenderer.on('modpack:progress', (_event, data) => cb(data)),
+  packSettings: (id) => ipcRenderer.invoke('instance:settings', { id }),
+  savePackSettings: (id, patch) => ipcRenderer.invoke('instance:save', { id, patch }),
+  deletePack: (id) => ipcRenderer.invoke('instance:delete', { id }),
+  checkControlify: (id) => ipcRenderer.invoke('controlify:check', { id }),
+  addControlify: (id) => ipcRenderer.invoke('controlify:add', { id }),
+  onContentProgress: (cb) => ipcRenderer.on('content:progress', (_event, data) => cb(data)),
+  onLaunchEnded: (cb) => ipcRenderer.on('launch:ended', (_event, data) => cb(data)),
+  onLaunchProgress: (cb) => ipcRenderer.on('launch:progress', (_event, data) => cb(data)),
+});

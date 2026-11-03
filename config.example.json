@@ -1,0 +1,13 @@
+{
+  "instancesDir": "/home/DEIN-NAME/.local/share/PrismLauncher/instances",
+  "iconsDir": "/home/DEIN-NAME/.local/share/PrismLauncher/icons",
+  "prismCommand": ["prismlauncher"],
+  "onLaunch": "stay",
+  "fullscreen": true,
+  "aButton": "details",
+  "sounds": true,
+  "volume": 0.5,
+  "overrides": {
+    "Ordnername-der-Instanz": { "title": "Anzeigename", "icon": "covers/bild.png" }
+  }
+}

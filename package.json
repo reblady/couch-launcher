@@ -1,0 +1,55 @@
+{
+  "name": "couch-launcher",
+  "version": "0.1.0",
+  "description": "Big-Picture-artiges Controller-Frontend für Prism Launcher",
+  "author": "reblady",
+  "homepage": "https://github.com/reblady/couch-launcher",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reblady/couch-launcher.git"
+  },
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:windowed": "electron . --windowed",
+    "start:nosandbox": "electron . --no-sandbox",
+    "test": "node test/test.js",
+    "dist": "electron-builder --linux AppImage"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0"
+  },
+  "productName": "Couch Launcher",
+  "build": {
+    "appId": "de.couchlauncher.app",
+    "productName": "Couch Launcher",
+    "artifactName": "Couch-Launcher-${version}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "*.js",
+      "index.html",
+      "style.css",
+      "package.json",
+      "!test/**"
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Game",
+      "icon": "build/icon.png",
+      "executableName": "couch-launcher",
+      "synopsis": "Prism-Instanzen am Sofa per Controller starten",
+      "syncDesktopName": true
+    },
+    "publish": {
+      "provider": "github"
+    }
+  },
+  "desktopName": "couch-launcher.desktop"
+}

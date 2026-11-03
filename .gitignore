@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# Persönliche Einstellungen, liegen inzwischen unter ~/.config/couch-launcher/
+config.json
